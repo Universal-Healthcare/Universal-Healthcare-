@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@sentry/nextjs": "^8",
     "@universal-healthcare/shared": "workspace:*",
     "next": "^15.2.3",
     "react": "^19.0.0",
@@ -30,5 +31,3 @@
     "vitest": "^3.0.9"
   }
 }
-
-

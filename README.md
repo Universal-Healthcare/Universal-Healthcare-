@@ -347,8 +347,24 @@ CI mirrors that. Each package has its own workflow under `.github/workflows/`:
 - `mobile.yml`  – `lint · test`
 - `shared.yml`  – `lint · build`
 - `stellar.yml` – `lint · build`
+- `docs.yml`    – `markdownlint + markdown-link-check`
+- `deploy-api.yml` – `docker build + push GHCR + trigger Render deploy`
 
 PRs only need to pass the workflows for the packages they touch (plus their downstream consumers via Turbo). See **[`docs/testing.md`](docs/testing.md)** for runner specifics and coverage notes.
+
+### Verify CI locally before pushing
+
+Run the full CI-equivalent suite with one command — mirrors every step the 7 workflows actually execute (install + per-package turbo + docs lints + `docker build`):
+
+```bash
+tools/ci-local.sh                # full suite (api, web, shared, stellar,
+                                  # mobile, docs, docker build) — ~3 min
+tools/ci-local.sh --quick        # api + web + shared only — ~1 min
+tools/ci-local.sh --no-docker    # everything except the docker build
+tools/ci-local.sh --no-color     # plain output, for log files
+```
+
+The script uses `set -o pipefail` so docker/pnpm exit codes are captured correctly (this was the bug that hid a broken `COPY` line in the Dockerfile for a day), colors each step green/red, prints per-step timings, and exits with the number of failed steps.
 
 ---
 
