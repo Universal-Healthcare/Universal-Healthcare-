@@ -103,6 +103,7 @@ A PR is review-ready when every box here is true:
 | `prisma generate` drift after schema change            | Run it: `pnpm --filter @universal-healthcare/api exec prisma generate` |
 | ESLint flat config warnings                           | Run `pnpm format` before chasing them by hand       |
 | `pnpm-lock.yaml` out of sync with team                 | Always commit the lockfile; never edit it by hand    |
+| Install / lockfile or docker build fails locally but CI is green | Run `tools/ci-local.sh --no-docker` to isolate the install / turbo / docs layers from the docker layer; if the failure is docker-specific, run `tools/ci-local.sh` (no flag) to include the docker build step |
 
 ---
 
