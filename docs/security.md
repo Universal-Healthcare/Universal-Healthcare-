@@ -182,10 +182,12 @@ We commit to:
 
 | Concern                 | Today                                                 | To do                                                                |
 | ----------------------- | ----------------------------------------------------- | -------------------------------------------------------------------- |
-| CORS                    | Not configured (assumes same-origin web/mobile)       | Add explicit `Access-Control-Allow-Origin` for web origin in prod    |
-| Security headers (CSP, HSTS, X-Frame-Options, …) | Not set                          | Mount `helmet` in `apps/api` (follow-up); add CSP/HSTS in `next.config` for web (follow-up) |
-| Rate limiting           | None                                                  | Use a reverse-proxy layer (nginx, Cloudflare) or `express-rate-limit` per `/api/auth/*` |
-| Request size limit      | Express default                                       | Set a body-size cap on `/api/users/me/avatar-upload-url` consumers |
+| CORS                    | **Allowlist** via `CORS_ORIGINS` (env-driven, origin callback rejects unknown origins with 403). Empty list = allow all (dev-only convenience; warn at startup in production) | Audit allowlist for any non-public origins before each release |
+| Security headers        | **Helmet** mounts in `apps/api` with `crossOriginResourcePolicy: cross-origin` so cross-origin XHR/fetch reads aren't blocked. Default headers include HSTS (off in dev), `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, no `X-Powered-By` | Add CSP / Referrer-Policy to the web app's `next.config` (follow-up) |
+| Rate limiting           | **Per-IP fixed-window** via `express-rate-limit` on all `/api/*` (configurable via `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX`; no-op when `NODE_ENV=test`). Standard `RateLimit-*` response headers (draft-7) | Add a stricter per-endpoint policy for `/api/auth/*` (5 req/min/IP) once auth-attack traffic is observable |
+| Request size limit      | **1 MB JSON body cap** on `/api/*` (`express.json({ limit: '1mb' })`) | Same cap for any future multipart endpoints                            |
+| Request ID              | **`X-Request-Id`** trusted if it matches `[A-Za-z0-9._-]{1,128}` (upstream), otherwise generated as a UUID v4. Echoed in the response header and in every structured log line | Propagate the same id to outbound S3 / Stellar calls (correlation)  |
+| Process lifecycle       | **Graceful shutdown** on `SIGTERM` / `SIGINT` — drains in-flight requests (10s), disconnects Prisma, hard-exits after 25s. `uncaughtException` + `unhandledRejection` are logged but do not kill the process silently | n/a                                                                  |
 
 ---
 
@@ -213,7 +215,8 @@ If you discover a CVE in a dep we ship, disclose upstream *and* drop us a note s
 ## Logging
 
 - `src/shared/logger/logger.ts` is JSON-structured (one line per entry, machine parseable).
-- **Never** log: raw passwords, JWT secrets, `JWT_SECRET`, AWS keys, full request bodies containing PII.
+- **Request access log** is emitted from `request-logger.middleware.ts` on `res.finish` with `method`, `path`, `status`, `durationMs`, `requestId`, `userId`, `ip`, `userAgent`. Aborted connections emit a separate `http_request_aborted` warn line.
+- **Never** log: raw passwords, JWT secrets, `JWT_SECRET`, AWS keys, full request bodies containing PII. The `authorization`, `cookie`, and `x-api-key` headers are redacted in any debug-level log that includes request headers.
 - **Audited writes** (login, profile update, password change) — not currently logged at higher granularity. Track as a follow-up.
 
 ---
@@ -239,14 +242,19 @@ Concrete ops checklist you can run through before flipping DNS:
 
 - [ ] Rotate `JWT_SECRET`. Don't reuse development secrets.
 - [ ] Set `JWT_EXPIRES_IN` to a value appropriate for your risk model.
+- [ ] Set `CORS_ORIGINS` to the exact production web origin (no empty list).
+- [ ] Set `TRUST_PROXY=true` behind the reverse proxy so `req.ip` is the real client IP.
+- [ ] Set `RATE_LIMIT_*` to values appropriate for your expected RPS — start strict, loosen from observed 429 rates.
 - [ ] Provision a dedicated S3 bucket with least-privilege IAM for the API's role only.
 - [ ] Bucket CORS restricted to your web origin.
 - [ ] Bucket policy denies `s3:ListBucket` and `s3:GetObject` outside the `avatars/` prefix.
 - [ ] Postgres / SQLite DB user has only `SELECT, INSERT, UPDATE, DELETE` on the application's schema.
 - [ ] DB backups scheduled, retention documented.
-- [ ] Reverse proxy in front of the API does TLS termination and rate limits `/api/auth/*`.
+- [ ] Reverse proxy in front of the API does TLS termination.
 - [ ] Secrets masked in CI logs.
-- [ ] Monitoring/alerting on spikes of `401`, `403`, and 5xx.
+- [ ] Scrape `GET /metrics` with Prometheus; alert on spikes of `401`, `403`, and 5xx; alert on `uhc_http_requests_in_flight` saturation.
+- [ ] Wire your orchestrator's readiness probe to `/readyz` and liveness to `/livez` (they're different on purpose).
+- [ ] Verify graceful shutdown by sending `SIGTERM` to a running instance — it should drain and exit `0` within the timeout.
 - [ ] Vulnerability-reporting channel is reachable (test it).
 
 ---

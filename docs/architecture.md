@@ -73,6 +73,9 @@ flowchart LR
 
   API --> DB[("Prisma<br/>SQLite · Postgres")]
   API --> S3[("AWS S3<br/>avatar uploads")]
+  API --> MET[/"GET /metrics<br/>Prometheus"/]
+  API --> OBS["shared/observability<br/>metrics · middleware"]
+  API --> LC["shared/lifecycle<br/>graceful shutdown"]
 ```
 
 **Read this diagram as:** clients call HTTP, the API dispatches to modules, modules share state through the `users` service (the only owned persistable entity), the contract layer sits underneath all of it, and storage fans out to Prisma and S3.
@@ -102,7 +105,9 @@ src/shared/
 ├── database/      – Prisma client singleton
 ├── errors/        – AppError and family
 ├── logger/        – JSON-structured application logger
-├── middleware/    – Express middleware (auth, error handling)
+├── middleware/    – Express middleware (auth, error handler, request-id, request-logger, rate limit)
+├── observability/ – Prometheus metrics registry + metrics middleware
+├── lifecycle/     – graceful shutdown on SIGTERM / SIGINT
 ├── storage/       – S3 client + presigned URL helpers
 └── types/         – global type augmentations (e.g. Express Request)
 ```
@@ -114,7 +119,7 @@ src/shared/
 | `auth`       | `POST /api/auth/register` · `POST /api/auth/login`    | ✅ shipped |
 | `users`      | `GET /api/users/me` · `PATCH /api/users/me` · `POST /api/users/me/avatar-upload-url` | ✅ shipped |
 | `creators`   | `GET /api/creators/:slug`                              | ✅ shipped |
-| `fans`       | service + repository ready; **router not yet mounted** | 🟡 scaffolded |
+| `fans`       | `GET /api/fans/me` · `PUT /api/fans/me` · `PATCH /api/fans/me` · `PUT /api/fans/me/genre-prefs` | ✅ shipped |
 
 Module rule: modules call **each other's services**, not each other's repositories. This keeps persistence ownership explicit and makes it cheap to swap Prisma or DB out later.
 
@@ -134,6 +139,11 @@ Module rule: modules call **each other's services**, not each other's repositori
 | `env` (zod-validated)        | `src/shared/config/env.ts`                      |
 | `logger` (JSON structured)   | `src/shared/logger/logger.ts`                   |
 | `requireAuth` middleware     | `src/shared/middleware/auth.middleware.ts`      |
+| `requestId` middleware       | `src/shared/middleware/request-id.middleware.ts`|
+| `requestLogger` middleware   | `src/shared/middleware/request-logger.middleware.ts` |
+| `buildRateLimiter`           | `src/shared/middleware/rate-limit.middleware.ts`|
+| `metricsMiddleware` + `metricsSnapshot` | `src/shared/observability/`           |
+| `installGracefulShutdown`    | `src/shared/lifecycle/graceful-shutdown.ts`     |
 | `createAvatarUploadUrl` (S3) | `src/shared/storage/s3.ts`                      |
 
 See [Environment](./environment.md) for the env variables these consume.

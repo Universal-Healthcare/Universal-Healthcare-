@@ -50,6 +50,11 @@ Copy `apps/api/.env.example` → `apps/api/.env`.
 | `AWS_ACCESS_KEY_ID`  | when avatars enabled | empty                  | Use an IAM access key scoped to a single bucket                                     |
 | `AWS_SECRET_ACCESS_KEY` | when avatars enabled | empty              | Pair to the access key. Rotate via IAM, not in source                                |
 | `AWS_S3_BUCKET`      | when avatars enabled | empty                  | Bucket the API writes avatar uploads into                                            |
+| `CORS_ORIGINS`       | no                   | empty (allow all)      | Comma-separated list of allowed web origins. **Always set this in production** (e.g. `https://app.universal-healthcare.example`) |
+| `RATE_LIMIT_WINDOW_MS` | no                 | `60000`                | Per-IP fixed window for the `/api/*` rate limiter (ms). Lower = stricter              |
+| `RATE_LIMIT_MAX`     | no                   | `120`                  | Max requests per `RATE_LIMIT_WINDOW_MS` per IP. No-op when `NODE_ENV=test`            |
+| `TRUST_PROXY`        | no                   | `false`                | Set `true` when the API runs behind a reverse proxy so `req.ip` reflects `X-Forwarded-For`. Required for accurate rate limiting in production |
+| `LOG_LEVEL`          | no                   | `info`                 | `debug` · `info` · `warn` · `error`                                                  |
 
 `apps/api/.env.test` is checked in with safe, test-only values and is read automatically by the `test` script.
 

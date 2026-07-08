@@ -64,6 +64,17 @@ The goal is to make it easy to spin up new healthcare workflows (provider direct
 - ESLint flat config, Prettier, TypeScript `strict` mode enforced everywhere
 - JSON-structured logger, validated env loader with sensible defaults
 
+### Observability & Hardening
+- **Helmet** security headers on every response
+- **CORS** allowlist driven by `CORS_ORIGINS` (env-driven; empty list = allow all in dev only)
+- **Per-IP rate limiting** on all `/api/*` routes (`RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX`, no-op in test env)
+- **Request ID** (`X-Request-Id`): trust upstream or generate a UUID, attached to logs and response header
+- **Structured access log** with method, path, status, duration, userId, requestId
+- **Prometheus metrics** at `GET /metrics` — request count + duration histogram + in-flight gauge
+- **Liveness / readiness** split: `/livez` (process), `/readyz` (DB ping with 2s timeout)
+- **Graceful shutdown** on `SIGTERM` / `SIGINT` — drain connections, disconnect Prisma, force-exit after 25s
+- **Compression** (gzip) for all responses ≥ 1KB
+
 ### Ledger-Ready Scaffold
 - A separate `@universal-healthcare/stellar` package that compiles to placeholder types/interfaces ready for a Stellar payment / data-provenance layer (no blockchain logic yet — kept compile-only so future integrations land in one obvious place)
 
@@ -227,13 +238,22 @@ The current surface is:
 
 | Method | Path                              | Auth     | Description                                    |
 | ------ | --------------------------------- | -------- | ---------------------------------------------- |
-| GET    | `/health`                         | –        | Liveness probe                                 |
+| GET    | `/health`                         | –        | Simple liveness probe (200)                    |
+| GET    | `/livez`                          | –        | Kubernetes-style liveness (process up)         |
+| GET    | `/readyz`                         | –        | Readiness probe (pings the DB; 503 on failure)  |
+| GET    | `/metrics`                        | –        | Prometheus text-format metrics                 |
 | POST   | `/api/auth/register`              | –        | Create account, returns user + JWT             |
 | POST   | `/api/auth/login`                 | –        | Verify credentials, returns user + JWT         |
 | GET    | `/api/users/me`                   | Bearer   | Current user + creator / fan profile           |
 | PATCH  | `/api/users/me`                   | Bearer   | Update own profile (display name, bio, etc.)  |
 | POST   | `/api/users/me/avatar-upload-url` | Bearer   | Issue a presigned S3 `PUT` URL (5 min TTL)     |
 | GET    | `/api/creators/:slug`             | –        | Public creator profile lookup                  |
+| GET    | `/api/fans/me`                    | Bearer   | Current fan profile                            |
+| PUT    | `/api/fans/me`                    | Bearer   | Create or replace own fan profile              |
+| PATCH  | `/api/fans/me`                    | Bearer   | Partial update of own fan profile              |
+| PUT    | `/api/fans/me/genre-prefs`        | Bearer   | Replace the genre-preferences array            |
+
+All `/api/*` routes are subject to per-IP rate limiting. Configure via `RATE_LIMIT_WINDOW_MS` and `RATE_LIMIT_MAX` (no-op in `NODE_ENV=test`).
 
 ### `apps/web` – Next.js portal
 
@@ -294,7 +314,7 @@ Every app keeps a committed `.env.example`. See **[`docs/environment.md`](docs/e
 
 | App      | Required              | Optional                      |
 | -------- | --------------------- | ----------------------------- |
-| `api`    | `DATABASE_URL`, `JWT_SECRET` | `PORT`, `NODE_ENV`, `JWT_EXPIRES_IN`, AWS creds for S3 |
+| `api`    | `DATABASE_URL`, `JWT_SECRET` | `PORT`, `NODE_ENV`, `JWT_EXPIRES_IN`, AWS creds for S3, `CORS_ORIGINS`, `RATE_LIMIT_*`, `TRUST_PROXY`, `LOG_LEVEL` |
 | `web`    | –                     | `NEXT_PUBLIC_API_URL` (default `http://localhost:4000`) |
 | `mobile` | –                     | `EXPO_PUBLIC_API_URL` (default `http://localhost:4000`) |
 
@@ -383,12 +403,14 @@ Don't commit `.env`, secrets, or generated artifacts (`dist/`, `.next/`, `.expo/
 
 UHDN is at the foundation stage. The current gaps — each pre-scaffolded and waiting on top of the existing primitives:
 
-- **Wire the `fans` module into `app.ts`** – services and repository are written and tested; the router just needs to be mounted.
 - **Activation flow** – today registration creates a `User`; the next iteration creates a `CreatorProfile` / `FanProfile` based on chosen role.
+- **Refresh-token rotation** – currently 1h access JWTs with no rotation. Will add a refresh-token table + rotation + revocation.
+- **Password reset & email verification** – self-serve flows with signed email links.
 - **Real Stellar integration** – flesh out `packages/stellar` with a Horizon client and reconciliation flows for data provenance.
-- **Patient / provider / payer scopes** – additional Tables and DTOs sharing the existing module pattern.
+- **Patient / provider / payer scopes** – additional tables and DTOs sharing the existing module pattern.
 - **OAuth / SSO** – Google, Apple, Microsoft Entra for clinician identity.
-- **Observability** – request tracing, structured metrics, audit log for consent.
+- **Distributed tracing** – OpenTelemetry across API → Prisma → S3, with W3C `traceparent` propagation.
+- **Audit log** – append-only record of every privileged write (login, profile change, role change).
 - **Mobile feature parity** – login / profile edit screens in Expo wired to the same API.
 
 Have an idea? See the contributing guide and open an issue or PR.
