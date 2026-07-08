@@ -7,6 +7,11 @@ import type {
   UpdateCreatorInput,
 } from "../types/creator.types.js"
 
+export interface ListCreatorsResult {
+  data: CreatorProfile[]
+  total: number
+}
+
 export const creatorService = {
   findById(id: string): Promise<CreatorProfile | null> {
     return creatorRepository.findById(id)
@@ -18,6 +23,25 @@ export const creatorService = {
 
   findByUserId(userId: string): Promise<CreatorProfile | null> {
     return creatorRepository.findByUserId(userId)
+  },
+
+  async list(opts: {
+    page: number
+    pageSize: number
+    search?: string
+  }): Promise<ListCreatorsResult> {
+    const skip = (opts.page - 1) * opts.pageSize
+    const [data, total] = await Promise.all([
+      creatorRepository.listMany({
+        skip,
+        take: opts.pageSize,
+        ...(opts.search ? { search: opts.search } : {}),
+      }),
+      creatorRepository.count({
+        ...(opts.search ? { search: opts.search } : {}),
+      }),
+    ])
+    return { data, total }
   },
 
   async createCreatorProfile(input: CreateCreatorInput): Promise<CreatorProfile> {

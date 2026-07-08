@@ -18,6 +18,41 @@ export const creatorRepository = {
     return prisma.creatorProfile.findUnique({ where: { userId } })
   },
 
+  listMany(opts: {
+    skip: number
+    take: number
+    search?: string
+  }): Promise<CreatorProfile[]> {
+    const where = opts.search
+      ? {
+          OR: [
+            { displayName: { contains: opts.search } },
+            { slug: { contains: opts.search } },
+            { bio: { contains: opts.search } },
+          ],
+        }
+      : {}
+    return prisma.creatorProfile.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: opts.skip,
+      take: opts.take,
+    })
+  },
+
+  count(opts: { search?: string } = {}): Promise<number> {
+    const where = opts.search
+      ? {
+          OR: [
+            { displayName: { contains: opts.search } },
+            { slug: { contains: opts.search } },
+            { bio: { contains: opts.search } },
+          ],
+        }
+      : {}
+    return prisma.creatorProfile.count({ where })
+  },
+
   create(input: CreateCreatorInput & { slug: string }): Promise<CreatorProfile> {
     return prisma.creatorProfile.create({
       data: {

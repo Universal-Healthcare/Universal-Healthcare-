@@ -3,4 +3,5 @@ import { creatorController } from "../controllers/creator.controller.js"
 
 export const creatorsRouter: Router = Router()
 
+creatorsRouter.get("/", creatorController.list)
 creatorsRouter.get("/:slug", creatorController.getBySlug)
