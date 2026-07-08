@@ -27,7 +27,9 @@ pnpm dev:web      # http://localhost:3000
 pnpm dev:mobile   # Expo Dev Tools
 
 # 5. Verify before pushing
-pnpm check        # lint + typecheck + test across the workspace
+pnpm check                  # lint + typecheck + test across the workspace
+tools/ci-local.sh --quick   # api + web + shared, ~1 min
+tools/ci-local.sh           # full CI suite, incl. docker, ~3 min
 ```
 
 ---
@@ -53,7 +55,7 @@ If a `pnpm lint` or `pnpm typecheck` warning appears for code you didn't touch, 
 2. **Run `pnpm install`** if `pnpm-lock.yaml` changed or you switched branches.
 3. **Copy env files** ([Environment](./environment.md)) for the apps you'll exercise.
 4. **Make scoped changes.** Extend an existing module / package rather than creating a new top-level layer unless the new layer is justified.
-5. **Run `pnpm check`** before pushing — covers lint, typecheck, and test for any package your change touches (driven by Turbo's task graph).
+5. **Run `tools/ci-local.sh --quick`** before pushing — mirrors the CI workflows for the packages most likely to be affected (api + web + shared, ~1 min). For a full pre-push check including docker, use `tools/ci-local.sh` with no flag (~3 min). The script is a faithful local reproduction of the 7 GitHub Actions workflows: it runs `pnpm install --frozen-lockfile`, then the same turbo / docs / docker commands each workflow runs, with proper exit-code capture (`set -o pipefail`) and a per-step pass/fail summary.
 6. **Open a PR against `main`.** Target branch is `main`. PRs auto-trigger the workflow(s) for the packages you touched and any package that depends on them.
 
 ---
@@ -64,7 +66,7 @@ A PR is review-ready when every box here is true:
 
 - [ ] **Scoped** — one logical change, named clearly in the title and PR body
 - [ ] **Tests** — `vitest` / `jest` coverage for any new or changed behaviour
-- [ ] **`pnpm check`** — clean locally (lint + typecheck + test for affected packages)
+- [ ] **`tools/ci-local.sh --quick`** — clean locally for affected packages (or `pnpm check` for faster iterative feedback)
 - [ ] **Shared schemas** — any cross-app shape lives in `@universal-healthcare/shared`
 - [ ] **No new `.env`** — only `.env.example` updates are committed
 - [ ] **No generated artefacts** — `dist/`, `.next/`, `.expo/`, `*.db` are gitignored
