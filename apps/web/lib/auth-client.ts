@@ -1,4 +1,12 @@
-import type { AuthResponse, LoginInput, RegisterInput } from "@universal-healthcare/shared"
+import type {
+  AuthResponse,
+  ForgotPasswordInput,
+  LoginInput,
+  RegisterInput,
+  ResendVerificationInput,
+  ResetPasswordInput,
+  VerifyEmailInput,
+} from "@universal-healthcare/shared"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
 
@@ -44,4 +52,39 @@ export function loginUser(input: LoginInput): Promise<AuthResponse> {
   return postJson<AuthResponse>("/api/auth/login", input)
 }
 
+export function refreshTokens(refreshToken: string): Promise<AuthResponse> {
+  return postJson<AuthResponse>("/api/auth/refresh", { refreshToken })
+}
 
+export async function logoutUser(refreshToken: string | undefined): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/logout`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(refreshToken ? { refreshToken } : {}),
+  })
+  if (!response.ok && response.status !== 204) {
+    // best-effort logout: ignore errors so the local session is always cleared
+  }
+}
+
+export function verifyEmail(input: VerifyEmailInput): Promise<{ verified: boolean }> {
+  return postJson<{ verified: boolean }>("/api/auth/verify-email", input)
+}
+
+export function resendVerification(
+  input: ResendVerificationInput
+): Promise<{ accepted: boolean }> {
+  return postJson<{ accepted: boolean }>("/api/auth/resend-verification", input)
+}
+
+export function forgotPassword(
+  input: ForgotPasswordInput
+): Promise<{ accepted: boolean }> {
+  return postJson<{ accepted: boolean }>("/api/auth/forgot-password", input)
+}
+
+export function resetPassword(
+  input: ResetPasswordInput
+): Promise<{ reset: boolean }> {
+  return postJson<{ reset: boolean }>("/api/auth/reset-password", input)
+}
