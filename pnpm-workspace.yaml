@@ -1,3 +1,11 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# pnpm-workspace.yaml — workspace member globs.
+#
+# To remove the `--legacy` flag from apps/api/Dockerfile's `pnpm deploy`
+# call, add `inject-workspace-packages: true` below. See the TODO in
+# apps/api/Dockerfile for the full migration plan and the trigger to act on.
+# ─────────────────────────────────────────────────────────────────────────────
+
 packages:
   - "apps/*"
   - "packages/*"

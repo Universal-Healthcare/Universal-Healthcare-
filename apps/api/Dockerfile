@@ -45,11 +45,20 @@ COPY apps/api/ ./apps/api/
 RUN pnpm --filter @universal-healthcare/api exec prisma generate
 RUN pnpm --filter @universal-healthcare/api build
 
-# Produce a self-contained production deployment (pruned deps + workspace pkgs)
+# Produce a self-contained production deployment (pruned deps + workspace pkgs).
 # --legacy: pnpm v10's default `deploy` requires `inject-workspace-packages=true`
-# in pnpm-workspace.yaml. We don't want to flip that workspace-wide (it changes
+# in pnpm-workspace.yaml. We don't want to flip that flag workspace-wide (it changes
 # resolution semantics for every pnpm command), so we opt the deploy call into
 # pnpm v9 behavior with --legacy.
+#
+# TODO(when pnpm vN: remove --legacy): pnpm v10's release notes flag --legacy
+# for removal in a future major. Watch for any deprecation warning mentioning
+# `--legacy` in pnpm output before the removal lands — that's the deprecation
+# window to do this migration:
+#   1. Add `inject-workspace-packages: true` to pnpm-workspace.yaml
+#   2. Drop `--legacy` from the `pnpm deploy` line below
+# `git grep -- '--legacy'` across the repo to confirm no other callers need
+# the same treatment.
 RUN pnpm --filter @universal-healthcare/api deploy --prod --legacy /app/deploy
 
 # ─── Stage 3: runtime ──────────────────────────────────────────────────────
