@@ -27,9 +27,19 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Markdownlint (style)
-        run: pnpm dlx markdownlint-cli2 "**/*.md" --config .markdownlint.jsonc
+        # Negative globs exclude vendor MD files in installed packages. The
+        # config is loaded via --config so the style rules stay self-contained.
+        run: |
+          pnpm dlx markdownlint-cli2 \
+            "**/*.md" \
+            "!**/node_modules/**" \
+            "!**/.git/**" \
+            --config .markdownlint.jsonc
 
       - name: Markdown link check (cross-links)
+        # Scope is intentionally limited to the project docs (docs/**/*.md)
+        # + the repo root README; node_modules and other vendor paths are
+        # excluded by the glob itself.
         run: |
           pnpm dlx markdown-link-check \
             "docs/**/*.md" \

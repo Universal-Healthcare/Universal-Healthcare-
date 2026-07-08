@@ -36,12 +36,14 @@ The goal is to make it easy to spin up new healthcare workflows (provider direct
 ## Features
 
 ### Authentication & Identity
+
 - Email + password registration and login with bcrypt hashing
 - JWT-based bearer auth with a `requireAuth` middleware
 - Persistent client sessions on web (`AuthProvider` + `localStorage`)
 - Centralised, typed error model (`AppError` with `statusCode` + machine-readable `code`)
 
 ### Profile Domain
+
 - **User** accounts owned by an `email`
 - **CreatorProfile** with public `/api/creators/:slug` lookup (display name, bio, avatar, genre, location, verification flag)
 - **FanProfile** with genre preferences for tailored experiences
@@ -49,22 +51,26 @@ The goal is to make it easy to spin up new healthcare workflows (provider direct
 - Presigned **S3** avatar upload URLs (5 minute TTL) issued from `POST /api/users/me/avatar-upload-url`
 
 ### Cross-Platform Surfaces
+
 - **API** – Express modular monolith with one router per domain (`auth`, `users`, `creators`, `…fans`)
 - **Web** – Next.js (App Router) portal with login, register, public creator pages, profile editing
 - **Mobile** – Expo / React Native shell with a `CreatorProfileScreen`, `ProfileImagePicker` component, and a reusable `useImagePicker` hook
 
 ### Shared Contracts
+
 - Zod schemas (`loginSchema`, `registerSchema`, `updateMeSchema`) reused on **both** sides of the wire (server validation = client validation)
 - Typed DTOs (`AuthResponse`, `MeResponse`, `CreatorProfileResponse`, `FanProfileResponse`)
 - Path-aliased workspace package (`@universal-healthcare/shared`) consumed directly from TypeScript source — no build step
 
 ### Developer Experience
+
 - pnpm + Turborepo workspace with per-package GitHub Actions
 - Vitest + Supertest on the API, Vitest + Testing Library on web, Jest + jest-expo on mobile
 - ESLint flat config, Prettier, TypeScript `strict` mode enforced everywhere
 - JSON-structured logger, validated env loader with sensible defaults
 
 ### Observability & Hardening
+
 - **Helmet** security headers on every response
 - **CORS** allowlist driven by `CORS_ORIGINS` (env-driven; empty list = allow all in dev only)
 - **Per-IP rate limiting** on all `/api/*` routes (`RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX`, no-op in test env)
@@ -76,6 +82,7 @@ The goal is to make it easy to spin up new healthcare workflows (provider direct
 - **Compression** (gzip) for all responses ≥ 1KB
 
 ### Ledger-Ready Scaffold
+
 - A separate `@universal-healthcare/stellar` package that compiles to placeholder types/interfaces ready for a Stellar payment / data-provenance layer (no blockchain logic yet — kept compile-only so future integrations land in one obvious place)
 
 ---
