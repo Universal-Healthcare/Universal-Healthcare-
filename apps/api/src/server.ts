@@ -3,7 +3,9 @@ import { env } from "./shared/config/env.js"
 import { buildEmailService } from "./shared/email/index.js"
 import { installGracefulShutdown } from "./shared/lifecycle/graceful-shutdown.js"
 import { logger } from "./shared/logger/logger.js"
+import { initSentry } from "./shared/observability/sentry.js"
 
+initSentry()
 buildEmailService()
 
 const app = createApp()

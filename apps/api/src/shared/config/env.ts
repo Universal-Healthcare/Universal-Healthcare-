@@ -37,6 +37,13 @@ const envSchema = z.object({
   PASSWORD_RESET_TTL_MINUTES: z.coerce.number().int().positive().default(60),
   EMAIL_FROM: z.string().default("noreply@universal-healthcare.local"),
   APP_URL: z.string().url().default("http://localhost:3000"),
+
+  // --- Phase 3: Sentry (no-op when SENTRY_DSN is empty) ----------------------
+  SENTRY_DSN: z.string().default(""),
+  SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0.1),
+  SENTRY_ENVIRONMENT: z.string().default(""),
+  SENTRY_RELEASE: z.string().default(""),
+  AWS_S3_ENDPOINT: z.string().default(""),
 })
 
 export type Env = z.infer<typeof envSchema>

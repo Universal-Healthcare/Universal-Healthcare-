@@ -1,6 +1,7 @@
 import type { Server } from "node:http"
 import { logger } from "../logger/logger.js"
 import { prisma } from "../database/prisma.js"
+import { flushSentry } from "../observability/sentry.js"
 
 export type ShutdownDeps = {
   server: Server
@@ -43,6 +44,10 @@ export function installGracefulShutdown(deps: ShutdownDeps): void {
 
       await prisma.$disconnect()
       logger.info("shutdown_db_disconnected")
+
+      // Flush in-flight Sentry events before the process exits. This is a
+      // no-op when Sentry isn't initialized.
+      await flushSentry(2_000)
 
       clearTimeout(forceExitTimer)
       logger.info("shutdown_complete", { signal })
