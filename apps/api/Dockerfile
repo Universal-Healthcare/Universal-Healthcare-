@@ -46,7 +46,11 @@ RUN pnpm --filter @universal-healthcare/api exec prisma generate
 RUN pnpm --filter @universal-healthcare/api build
 
 # Produce a self-contained production deployment (pruned deps + workspace pkgs)
-RUN pnpm --filter @universal-healthcare/api deploy --prod /app/deploy
+# --legacy: pnpm v10's default `deploy` requires `inject-workspace-packages=true`
+# in pnpm-workspace.yaml. We don't want to flip that workspace-wide (it changes
+# resolution semantics for every pnpm command), so we opt the deploy call into
+# pnpm v9 behavior with --legacy.
+RUN pnpm --filter @universal-healthcare/api deploy --prod --legacy /app/deploy
 
 # ─── Stage 3: runtime ──────────────────────────────────────────────────────
 FROM node:${NODE_VERSION}-alpine AS runner
@@ -56,12 +60,15 @@ WORKDIR /app
 # Non-root user
 RUN addgroup -g 1001 -S app && adduser -S -u 1001 -G app app
 
-# Self-contained prod deployment from the builder
+# Self-contained prod deployment from the builder. This already includes
+# the generated Prisma client (apps/api/node_modules/.prisma/client) and the
+# @prisma/client JS package, because `pnpm deploy --prod` runs after
+# `prisma generate` in the builder stage.
 COPY --from=builder --chown=app:app /app/deploy ./
 
-# Prisma schema + generated client (for migrations at container start)
+# Prisma schema (for migrations at container start). The generated client is
+# already in the deploy bundle above.
 COPY --from=builder --chown=app:app /workspace/apps/api/prisma ./prisma
-COPY --from=builder --chown=app:app /workspace/node_modules/.prisma ./node_modules/.prisma 2>/dev/null || true
 
 # Container entrypoint runs `prisma db push` then exec's the CMD
 COPY --chown=app:app apps/api/docker-entrypoint.sh /usr/local/bin/entrypoint.sh
