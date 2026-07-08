@@ -1,7 +1,10 @@
 import { createApp } from "./app.js"
 import { env } from "./shared/config/env.js"
+import { buildEmailService } from "./shared/email/index.js"
 import { installGracefulShutdown } from "./shared/lifecycle/graceful-shutdown.js"
 import { logger } from "./shared/logger/logger.js"
+
+buildEmailService()
 
 const app = createApp()
 

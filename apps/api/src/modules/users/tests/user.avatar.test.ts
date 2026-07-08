@@ -2,6 +2,7 @@ import request from "supertest"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { createApp } from "../../../app.js"
 import { prisma } from "../../../shared/database/prisma.js"
+import { buildEmailService } from "../../../shared/email/index.js"
 
 vi.mock("../../../shared/storage/s3.js", () => ({
   createAvatarUploadUrl: vi.fn().mockResolvedValue("https://s3.example.com/presigned-url"),
@@ -12,14 +13,26 @@ const app = createApp()
 async function registerAndLogin(email: string) {
   await request(app)
     .post("/api/auth/register")
-    .send({ email, password: "Password1!" })
+    .send({
+      email,
+      password: "Password1!",
+      role: "fan",
+      displayName: `Fan ${email}`,
+    })
 
   const res = await request(app)
     .post("/api/auth/login")
     .send({ email, password: "Password1!" })
 
-  return { token: res.body.token as string, userId: res.body.user.id as string }
+  return {
+    token: res.body.tokens.accessToken as string,
+    userId: res.body.user.id as string,
+  }
 }
+
+beforeEach(() => {
+  buildEmailService()
+})
 
 beforeEach(async () => {
   await prisma.fanProfile.deleteMany()

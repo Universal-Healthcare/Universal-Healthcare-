@@ -1,13 +1,24 @@
+export type ActivationRole = "creator" | "fan"
+
 export interface AuthUser {
   id: string
   email: string
+  emailVerified: boolean
+  role: ActivationRole
   createdAt: string
   updatedAt: string
 }
 
+export interface TokenPair {
+  accessToken: string
+  refreshToken: string
+  refreshTokenExpiresAt: string
+}
+
 export interface AuthResponse {
   user: AuthUser
-  token: string
+  tokens: TokenPair
+  profile: unknown | null
 }
 
 export interface ApiErrorResponse {

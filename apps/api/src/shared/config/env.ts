@@ -30,6 +30,13 @@ const envSchema = z.object({
   LOG_LEVEL: z
     .enum(["debug", "info", "warn", "error"])
     .default("info"),
+
+  // --- Phase 2: auth + email -------------------------------------------------
+  REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
+  EMAIL_VERIFICATION_TTL_HOURS: z.coerce.number().int().positive().default(24),
+  PASSWORD_RESET_TTL_MINUTES: z.coerce.number().int().positive().default(60),
+  EMAIL_FROM: z.string().default("noreply@universal-healthcare.local"),
+  APP_URL: z.string().url().default("http://localhost:3000"),
 })
 
 export type Env = z.infer<typeof envSchema>
