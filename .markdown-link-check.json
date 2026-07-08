@@ -1,0 +1,24 @@
+{
+  "ignorePatterns": [
+    { "pattern": "^http://localhost(:\\d+)?(/|$)" },
+    { "pattern": "^https://localhost(:\\d+)?(/|$)" },
+    { "pattern": "^http://127\\.0\\.0\\.1(:\\d+)?(/|$)" },
+    { "pattern": "^http://10\\.0\\.2\\.2(:\\d+)?(/|$)" }
+  ],
+  "replacementPatterns": [
+    { "pattern": "^/universal-healthcare-data-network/", "replacement": "/" }
+  ],
+  "httpHeaders": [
+    {
+      "urls": ["https://github.com/ask4moreish/Universal-Healthcare", "https://api.github.com"],
+      "headers": {
+        "Accept": "application/vnd.github+json"
+      }
+    }
+  ],
+  "retryOn429": true,
+  "retryCount": 5,
+  "retryDelay": 1000,
+  "aliveStatusCodes": [200, 206, 301, 302, 307, 308, 405],
+  "timeout": "30s"
+}

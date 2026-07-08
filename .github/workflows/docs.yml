@@ -1,0 +1,37 @@
+name: docs
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Concurrency: cancel in-progress runs on the same PR when a new commit lands.
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs:
+    name: Docs lint + link check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Markdownlint (style)
+        run: pnpm dlx markdownlint-cli2 "**/*.md" --config .markdownlint.jsonc
+
+      - name: Markdown link check (cross-links)
+        run: |
+          pnpm dlx markdown-link-check \
+            "docs/**/*.md" \
+            "README.md" \
+            --config .markdown-link-check.json
