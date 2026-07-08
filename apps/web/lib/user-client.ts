@@ -1,4 +1,4 @@
-import type { MeResponse, UpdateMeInput } from "@ask4moreish/shared"
+import type { MeResponse, UpdateMeInput } from "@universal-healthcare/shared"
 import { apiFetch, authHeaders } from "./api-client"
 
 export function getMe(token: string): Promise<MeResponse> {

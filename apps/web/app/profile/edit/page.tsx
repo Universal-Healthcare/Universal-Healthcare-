@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import type { MeResponse } from "@ask4moreish/shared"
+import type { MeResponse } from "@universal-healthcare/shared"
 import { useAuth } from "../../../lib/auth-context"
 import { getMe } from "../../../lib/user-client"
 import { EditProfileForm } from "../../../components/profile/edit-profile-form"

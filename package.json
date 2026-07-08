@@ -12,9 +12,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "dev": "turbo run dev --parallel",
-    "dev:api": "pnpm --filter @ask4moreish/api dev",
-    "dev:web": "pnpm --filter @ask4moreish/web dev",
-    "dev:mobile": "pnpm --filter @ask4moreish/mobile dev"
+    "dev:api": "pnpm --filter @universal-healthcare/api dev",
+    "dev:web": "pnpm --filter @universal-healthcare/web dev",
+    "dev:mobile": "pnpm --filter @universal-healthcare/mobile dev"
   },
   "devDependencies": {
     "@eslint/js": "^9.23.0",

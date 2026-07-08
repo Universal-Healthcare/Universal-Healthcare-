@@ -20,6 +20,6 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm turbo run lint build --filter=@ask4moreish/shared
+      - run: pnpm turbo run lint build --filter=@universal-healthcare/shared
 
 

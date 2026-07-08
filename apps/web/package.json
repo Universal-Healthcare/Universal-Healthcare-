@@ -1,5 +1,5 @@
 {
-  "name": "@ask4moreish/web",
+  "name": "@universal-healthcare/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,7 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@ask4moreish/shared": "workspace:*",
+    "@universal-healthcare/shared": "workspace:*",
     "next": "^15.2.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

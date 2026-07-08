@@ -4,7 +4,7 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 
 const DEFAULT_START = 473
-const DEFAULT_BACKLOG_PATH = ".local/ask4moreish-backlog.md"
+const DEFAULT_BACKLOG_PATH = ".local/universal-healthcare-backlog.md"
 
 const labelPalette = {
   enhancement: { color: "a2eeef", description: "New feature or request" },

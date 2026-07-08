@@ -1,6 +1,6 @@
 "use client"
 
-import { loginSchema } from "@ask4moreish/shared"
+import { loginSchema } from "@universal-healthcare/shared"
 import { useState, type FormEvent } from "react"
 import { AuthApiError } from "../../lib/auth-client"
 import { useAuth } from "../../lib/auth-context"

@@ -1,6 +1,6 @@
 "use client"
 
-import type { AuthUser, LoginInput, RegisterInput } from "@ask4moreish/shared"
+import type { AuthUser, LoginInput, RegisterInput } from "@universal-healthcare/shared"
 import {
   createContext,
   useCallback,
@@ -11,8 +11,8 @@ import {
 } from "react"
 import { loginUser, registerUser } from "./auth-client"
 
-const TOKEN_STORAGE_KEY = "ask4moreish.token"
-const USER_STORAGE_KEY = "ask4moreish.user"
+const TOKEN_STORAGE_KEY = "universal-healthcare.token"
+const USER_STORAGE_KEY = "universal-healthcare.user"
 
 interface AuthContextValue {
   user: AuthUser | null

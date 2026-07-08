@@ -1,4 +1,4 @@
-import type { CreatorProfileResponse } from "@ask4moreish/shared"
+import type { CreatorProfileResponse } from "@universal-healthcare/shared"
 import { apiFetch } from "./api-client"
 
 export function getCreatorBySlug(

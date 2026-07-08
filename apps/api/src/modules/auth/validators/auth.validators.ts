@@ -1,4 +1,4 @@
-export { loginSchema, registerSchema } from "@ask4moreish/shared"
-export type { LoginInput, RegisterInput } from "@ask4moreish/shared"
+export { loginSchema, registerSchema } from "@universal-healthcare/shared"
+export type { LoginInput, RegisterInput } from "@universal-healthcare/shared"
 
 

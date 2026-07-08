@@ -20,6 +20,6 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm turbo run lint test --filter=@ask4moreish/mobile
+      - run: pnpm turbo run lint test --filter=@universal-healthcare/mobile
 
 

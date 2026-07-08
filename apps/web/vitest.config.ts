@@ -9,7 +9,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@ask4moreish/shared": path.resolve(dirname, "../../packages/shared/src/index.ts"),
+      "@universal-healthcare/shared": path.resolve(dirname, "../../packages/shared/src/index.ts"),
     },
   },
   test: {

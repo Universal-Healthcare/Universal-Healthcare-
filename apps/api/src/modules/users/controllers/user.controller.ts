@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express"
-import { updateMeSchema } from "@ask4moreish/shared"
+import { updateMeSchema } from "@universal-healthcare/shared"
 import { creatorService } from "../../creators/services/creator.service.js"
 import { fanService } from "../../fans/services/fan.service.js"
 import { toCreatorResponse } from "../../creators/types/creator.types.js"

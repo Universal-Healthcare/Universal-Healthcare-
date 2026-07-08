@@ -1,4 +1,4 @@
-import type { AuthResponse, LoginInput, RegisterInput } from "@ask4moreish/shared"
+import type { AuthResponse, LoginInput, RegisterInput } from "@universal-healthcare/shared"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
 

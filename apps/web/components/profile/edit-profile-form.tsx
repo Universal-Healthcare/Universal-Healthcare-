@@ -1,6 +1,6 @@
 "use client"
 
-import { updateMeSchema, type UpdateMeInput } from "@ask4moreish/shared"
+import { updateMeSchema, type UpdateMeInput } from "@universal-healthcare/shared"
 import { useState, type FormEvent } from "react"
 import { ApiError } from "../../lib/api-client"
 import { updateMe } from "../../lib/user-client"

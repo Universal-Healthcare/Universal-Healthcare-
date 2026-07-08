@@ -1,6 +1,6 @@
 "use client"
 
-import type { CreatorProfileResponse } from "@ask4moreish/shared"
+import type { CreatorProfileResponse } from "@universal-healthcare/shared"
 import { useParams } from "next/navigation"
 import { useCallback, useEffect, useState } from "react"
 import { getCreatorBySlug } from "../../../lib/creator-client"

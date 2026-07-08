@@ -7,7 +7,7 @@ const dirname = path.dirname(fileURLToPath(import.meta.url))
 export default defineConfig({
   resolve: {
     alias: {
-      "@ask4moreish/shared": path.resolve(dirname, "../../packages/shared/src/index.ts"),
+      "@universal-healthcare/shared": path.resolve(dirname, "../../packages/shared/src/index.ts"),
     },
   },
   test: {
