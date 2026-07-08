@@ -1,5 +1,13 @@
 import { z } from "zod"
 
+const csv = (v: unknown) =>
+  typeof v === "string"
+    ? v
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : v
+
 const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
@@ -12,6 +20,16 @@ const envSchema = z.object({
   AWS_ACCESS_KEY_ID: z.string().default(""),
   AWS_SECRET_ACCESS_KEY: z.string().default(""),
   AWS_S3_BUCKET: z.string().default(""),
+
+  CORS_ORIGINS: z
+    .preprocess(csv, z.array(z.string().min(1)))
+    .default([]),
+  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
+  TRUST_PROXY: z.coerce.boolean().default(false),
+  LOG_LEVEL: z
+    .enum(["debug", "info", "warn", "error"])
+    .default("info"),
 })
 
 export type Env = z.infer<typeof envSchema>
