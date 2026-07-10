@@ -1,10 +1,10 @@
-import { AppError } from "../../../shared/errors/app-error.js"
-import { fanRepository } from "../repositories/fan.repository.js"
+import { AppError } from '../../../shared/errors/app-error.js'
+import { fanRepository } from '../repositories/fan.repository.js'
 import type {
   CreateFanProfileInput,
   FanProfile,
   UpdateFanProfileInput,
-} from "../types/fan.types.js"
+} from '../types/fan.types.js'
 
 export const fanService = {
   findByUserId(userId: string): Promise<FanProfile | null> {
@@ -29,14 +29,14 @@ export const fanService = {
   ): Promise<FanProfile> {
     const profile = await fanRepository.findById(id)
     if (!profile) {
-      throw new AppError(404, "FAN_NOT_FOUND", "Fan profile not found")
+      throw new AppError(404, 'FAN_NOT_FOUND', 'Fan profile not found')
     }
 
     if (profile.userId !== requestingUserId) {
       throw new AppError(
         403,
-        "FORBIDDEN",
-        "You do not have permission to edit this profile"
+        'FORBIDDEN',
+        'You do not have permission to edit this profile'
       )
     }
 
@@ -50,14 +50,14 @@ export const fanService = {
   ): Promise<FanProfile> {
     const profile = await fanRepository.findById(id)
     if (!profile) {
-      throw new AppError(404, "FAN_NOT_FOUND", "Fan profile not found")
+      throw new AppError(404, 'FAN_NOT_FOUND', 'Fan profile not found')
     }
 
     if (profile.userId !== requestingUserId) {
       throw new AppError(
         403,
-        "FORBIDDEN",
-        "You do not have permission to edit this profile"
+        'FORBIDDEN',
+        'You do not have permission to edit this profile'
       )
     }
 

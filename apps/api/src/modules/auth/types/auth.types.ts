@@ -1,18 +1,15 @@
 import {
   toCreatorResponse,
   type CreatorProfile,
-} from "../../creators/types/creator.types.js"
-import {
-  toFanResponse,
-  type FanProfile,
-} from "../../fans/types/fan.types.js"
-import type { User } from "../../users/types/user.types.js"
+} from '../../creators/types/creator.types.js'
+import { toFanResponse, type FanProfile } from '../../fans/types/fan.types.js'
+import type { User } from '../../users/types/user.types.js'
 
 export interface AuthUserResponse {
   id: string
   email: string
   emailVerified: boolean
-  role: "creator" | "fan"
+  role: 'creator' | 'fan'
   createdAt: string
   updatedAt: string
 }
@@ -33,12 +30,18 @@ export interface TokenPair {
 export type AuthResult = {
   user: AuthUserResponse
   tokens: TokenPair
-  profile: ReturnType<typeof toCreatorResponse> | ReturnType<typeof toFanResponse> | null
+  profile:
+    | ReturnType<typeof toCreatorResponse>
+    | ReturnType<typeof toFanResponse>
+    | null
 }
 
 export function toAuthUserResponse(
-  user: Pick<User, "id" | "email" | "emailVerified" | "createdAt" | "updatedAt">,
-  role: "creator" | "fan"
+  user: Pick<
+    User,
+    'id' | 'email' | 'emailVerified' | 'createdAt' | 'updatedAt'
+  >,
+  role: 'creator' | 'fan'
 ): AuthUserResponse {
   return {
     id: user.id,

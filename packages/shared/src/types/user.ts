@@ -1,5 +1,5 @@
-import type { CreatorProfileResponse } from "./creator.js"
-import type { FanProfileResponse } from "./fan.js"
+import type { CreatorProfileResponse } from './creator.js'
+import type { FanProfileResponse } from './fan.js'
 
 export interface MeResponse {
   user: {

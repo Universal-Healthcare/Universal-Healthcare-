@@ -1,6 +1,6 @@
-import * as Sentry from "@sentry/node"
-import { env } from "../config/env.js"
-import { logger } from "../logger/logger.js"
+import * as Sentry from '@sentry/node'
+import { env } from '../config/env.js'
+import { logger } from '../logger/logger.js'
 
 let initialized = false
 
@@ -17,7 +17,7 @@ export function initSentry(): void {
   initialized = true
 
   if (!env.SENTRY_DSN) {
-    logger.info("sentry_disabled", { reason: "SENTRY_DSN not set" })
+    logger.info('sentry_disabled', { reason: 'SENTRY_DSN not set' })
     return
   }
 
@@ -29,7 +29,7 @@ export function initSentry(): void {
     sendDefaultPii: false,
   })
 
-  logger.info("sentry_initialized", {
+  logger.info('sentry_initialized', {
     environment: env.SENTRY_ENVIRONMENT || env.NODE_ENV,
     release: env.SENTRY_RELEASE,
   })

@@ -1,5 +1,5 @@
-import type { CreatorProfileResponse } from "../types/creator.js"
-import type { FanProfileResponse } from "../types/fan.js"
+import type { CreatorProfileResponse } from '../types/creator.js'
+import type { FanProfileResponse } from '../types/fan.js'
 
 export interface ProfileCompletenessResult {
   score: number
@@ -25,28 +25,28 @@ function computeFromFields(fields: WeightedField[]): ProfileCompletenessResult {
 }
 
 export const creatorFieldLabels: Record<string, string> = {
-  displayName: "Display name",
-  bio: "Bio",
-  avatarUrl: "Profile photo",
-  genre: "Genre",
-  location: "Location",
+  displayName: 'Display name',
+  bio: 'Bio',
+  avatarUrl: 'Profile photo',
+  genre: 'Genre',
+  location: 'Location',
 }
 
 export const fanFieldLabels: Record<string, string> = {
-  displayName: "Display name",
-  avatarUrl: "Profile photo",
-  genrePrefs: "Genre preferences",
+  displayName: 'Display name',
+  avatarUrl: 'Profile photo',
+  genrePrefs: 'Genre preferences',
 }
 
 export function computeCreatorCompleteness(
   profile: CreatorProfileResponse
 ): ProfileCompletenessResult {
   const fields: WeightedField[] = [
-    { key: "displayName", weight: 20, filled: !!profile.displayName },
-    { key: "bio", weight: 30, filled: !!profile.bio },
-    { key: "avatarUrl", weight: 25, filled: !!profile.avatarUrl },
-    { key: "genre", weight: 15, filled: !!profile.genre },
-    { key: "location", weight: 10, filled: !!profile.location },
+    { key: 'displayName', weight: 20, filled: !!profile.displayName },
+    { key: 'bio', weight: 30, filled: !!profile.bio },
+    { key: 'avatarUrl', weight: 25, filled: !!profile.avatarUrl },
+    { key: 'genre', weight: 15, filled: !!profile.genre },
+    { key: 'location', weight: 10, filled: !!profile.location },
   ]
 
   return computeFromFields(fields)
@@ -56,9 +56,9 @@ export function computeFanCompleteness(
   profile: FanProfileResponse
 ): ProfileCompletenessResult {
   const fields: WeightedField[] = [
-    { key: "displayName", weight: 30, filled: !!profile.displayName },
-    { key: "avatarUrl", weight: 40, filled: !!profile.avatarUrl },
-    { key: "genrePrefs", weight: 30, filled: profile.genrePrefs.length > 0 },
+    { key: 'displayName', weight: 30, filled: !!profile.displayName },
+    { key: 'avatarUrl', weight: 40, filled: !!profile.avatarUrl },
+    { key: 'genrePrefs', weight: 30, filled: profile.genrePrefs.length > 0 },
   ]
 
   return computeFromFields(fields)

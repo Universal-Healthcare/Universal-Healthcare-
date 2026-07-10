@@ -1,5 +1,5 @@
-import { afterAll, beforeEach } from "vitest"
-import { prisma } from "../src/shared/database/prisma.js"
+import { afterAll, beforeEach } from 'vitest'
+import { prisma } from '../src/shared/database/prisma.js'
 
 beforeEach(async () => {
   // Order matters: child tables first, then the User cascade clears the rest.

@@ -9,5 +9,5 @@
   "MD046": { "style": "fenced" },
   "MD007": { "indent": 2 },
   "MD030": { "ul_single": 1, "ol_single": 1, "ul_multi": 1, "ol_multi": 1 },
-  "MD035": { "style": "---" }
+  "MD035": { "style": "---" },
 }

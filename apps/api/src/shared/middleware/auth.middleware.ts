@@ -1,19 +1,27 @@
-import type { NextFunction, Request, Response } from "express"
-import jwt from "jsonwebtoken"
-import { env } from "../config/env.js"
-import { AppError } from "../errors/app-error.js"
+import type { NextFunction, Request, Response } from 'express'
+import jwt from 'jsonwebtoken'
+import { env } from '../config/env.js'
+import { AppError } from '../errors/app-error.js'
 
 interface AccessTokenPayload {
   sub: string
 }
 
-const BEARER_PREFIX = "Bearer "
+const BEARER_PREFIX = 'Bearer '
 
-export function requireAuth(req: Request, _res: Response, next: NextFunction): void {
+export function requireAuth(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): void {
   const header = req.headers.authorization
 
   if (!header || !header.startsWith(BEARER_PREFIX)) {
-    throw new AppError(401, "UNAUTHORIZED", "Missing or invalid authorization header")
+    throw new AppError(
+      401,
+      'UNAUTHORIZED',
+      'Missing or invalid authorization header'
+    )
   }
 
   const token = header.slice(BEARER_PREFIX.length)
@@ -23,6 +31,6 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction): v
     req.userId = payload.sub
     next()
   } catch {
-    throw new AppError(401, "UNAUTHORIZED", "Invalid or expired token")
+    throw new AppError(401, 'UNAUTHORIZED', 'Invalid or expired token')
   }
 }

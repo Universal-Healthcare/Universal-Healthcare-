@@ -25,12 +25,12 @@ pnpm --filter @universal-healthcare/shared test
 
 ## Runners at a glance
 
-| Package          | Runner                                  | Database / Env                              | Scope                                                                 |
-| ---------------- | --------------------------------------- | -------------------------------------------- | -------------------------------------------------------------------- |
-| `api`            | Vitest + Supertest                      | SQLite via `apps/api/.env.test`             | Module integration through the Express app — no real network port |
-| `web`            | Vitest + Testing Library + jsdom        | None (mocked `lib/auth-client`)             | Render pages inside `AuthProvider`, assert fields + client errors  |
-| `mobile`         | Jest (`jest-expo`) + Testing Library RN | None                                       | Smoke + screen / hook / image-picker tests                         |
-| `shared`         | Vitest                                  | None                                        | Schema validation rules (Zod)                                      |
+| Package  | Runner                                  | Database / Env                  | Scope                                                             |
+| -------- | --------------------------------------- | ------------------------------- | ----------------------------------------------------------------- |
+| `api`    | Vitest + Supertest                      | SQLite via `apps/api/.env.test` | Module integration through the Express app — no real network port |
+| `web`    | Vitest + Testing Library + jsdom        | None (mocked `lib/auth-client`) | Render pages inside `AuthProvider`, assert fields + client errors |
+| `mobile` | Jest (`jest-expo`) + Testing Library RN | None                            | Smoke + screen / hook / image-picker tests                        |
+| `shared` | Vitest                                  | None                            | Schema validation rules (Zod)                                     |
 
 ---
 
@@ -38,7 +38,7 @@ pnpm --filter @universal-healthcare/shared test
 
 - **Runner:** Vitest + Supertest. Tests use `createApp()` from `src/app.ts` — no real HTTP listener is started.
 - **Database:** A throwaway SQLite database backed by `apps/api/.env.test`. The `test` script runs `prisma db push --skip-generate --accept-data-loss` against it before Vitest, and a global `beforeEach` in `tests/setup.ts` clears tables between tests so tests are order-independent.
-- **File parallelism:** `fileParallelism: false` to dodge SQLite lock contention. Tests run sequentially within the package, but parallel *across* packages (Turbo handles it).
+- **File parallelism:** `fileParallelism: false` to dodge SQLite lock contention. Tests run sequentially within the package, but parallel _across_ packages (Turbo handles it).
 - **Coverage focus:**
   - `auth/register` — success, duplicate email, invalid input
   - `auth/login` — success, invalid credentials, unknown account
@@ -85,7 +85,7 @@ The web app uses `@universal-healthcare/shared` for client-side validation. If t
 - **Runner:** Vitest
 - **Coverage focus:** Validation rules for `loginSchema`, `registerSchema`, `updateMeSchema` — valid emails / invalid emails / password rules / required fields / missing fields / extra fields.
 
-Because `packages/shared` is consumed directly from source, a test failure here will surface in `api`, `web`, *and* `mobile` test runs.
+Because `packages/shared` is consumed directly from source, a test failure here will surface in `api`, `web`, _and_ `mobile` test runs.
 
 ---
 
@@ -93,13 +93,13 @@ Because `packages/shared` is consumed directly from source, a test failure here 
 
 CI mirrors local. Each package has its own workflow under `.github/workflows/` that installs dependencies and runs the relevant `turbo run` tasks scoped to that package with `--filter`:
 
-| Workflow file        | Tasks                          |
-| -------------------- | ------------------------------ |
-| `api.yml`            | `lint · test · build`           |
-| `web.yml`            | `lint · test · build`           |
-| `mobile.yml`         | `lint · test`                   |
-| `shared.yml`         | `lint · build`                  |
-| `stellar.yml`        | `lint · build`                  |
+| Workflow file | Tasks                 |
+| ------------- | --------------------- |
+| `api.yml`     | `lint · test · build` |
+| `web.yml`     | `lint · test · build` |
+| `mobile.yml`  | `lint · test`         |
+| `shared.yml`  | `lint · build`        |
+| `stellar.yml` | `lint · build`        |
 
 A pull request only needs to pass the workflows for the packages it touches. Turbo's dependency graph cascades downstream — a change to `packages/shared` will trigger `api`, `web`, and `mobile` tests in addition to `shared`.
 
@@ -112,6 +112,6 @@ We don't chase `100%`. We chase **the right lines**:
 - Every module has tests for its **happy path**, its **validation failure**, and its **forbidden-cross-module-access** case.
 - Shared Zod schemas are exhaustively tested because they're a contract — one bad branch silently corrupts web + mobile + api at the same time.
 - UI tests focus on **state transitions** (loading / error / empty / ok), not on asserting pixel layouts.
-- Don't test the framework — test the *behaviour you wrote*. If you find yourself asserting that `useState` triggers a re-render, stop.
+- Don't test the framework — test the _behaviour you wrote_. If you find yourself asserting that `useState` triggers a re-render, stop.
 
 When in doubt: cover the path a real user can hit, and the path a real attacker can break.

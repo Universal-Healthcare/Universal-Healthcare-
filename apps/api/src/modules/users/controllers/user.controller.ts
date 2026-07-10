@@ -1,14 +1,14 @@
-import type { NextFunction, Request, Response } from "express"
-import { updateMeSchema } from "@universal-healthcare/shared"
-import { creatorService } from "../../creators/services/creator.service.js"
-import { fanService } from "../../fans/services/fan.service.js"
-import { toCreatorResponse } from "../../creators/types/creator.types.js"
-import { toFanResponse } from "../../fans/types/fan.types.js"
-import { userService } from "../services/user.service.js"
-import { createAvatarUploadUrl } from "../../../shared/storage/s3.js"
-import { AppError } from "../../../shared/errors/app-error.js"
+import type { NextFunction, Request, Response } from 'express'
+import { updateMeSchema } from '@universal-healthcare/shared'
+import { creatorService } from '../../creators/services/creator.service.js'
+import { fanService } from '../../fans/services/fan.service.js'
+import { toCreatorResponse } from '../../creators/types/creator.types.js'
+import { toFanResponse } from '../../fans/types/fan.types.js'
+import { userService } from '../services/user.service.js'
+import { createAvatarUploadUrl } from '../../../shared/storage/s3.js'
+import { AppError } from '../../../shared/errors/app-error.js'
 
-const ALLOWED_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"]
+const ALLOWED_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 export const userController = {
   async getMe(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -25,7 +25,9 @@ export const userController = {
         user: {
           id: userId,
           email: user!.email,
-          creatorProfile: creatorProfile ? toCreatorResponse(creatorProfile) : null,
+          creatorProfile: creatorProfile
+            ? toCreatorResponse(creatorProfile)
+            : null,
           fanProfile: fanProfile ? toFanResponse(fanProfile) : null,
         },
       })
@@ -46,15 +48,15 @@ export const userController = {
       if (!contentType || !ALLOWED_CONTENT_TYPES.includes(contentType)) {
         throw new AppError(
           400,
-          "INVALID_CONTENT_TYPE",
-          `contentType must be one of: ${ALLOWED_CONTENT_TYPES.join(", ")}`
+          'INVALID_CONTENT_TYPE',
+          `contentType must be one of: ${ALLOWED_CONTENT_TYPES.join(', ')}`
         )
       }
 
-      const ext = contentType.split("/")[1]
+      const ext = contentType.split('/')[1]
       const key = `avatars/${userId}.${ext}`
       const uploadUrl = await createAvatarUploadUrl(key, contentType)
-      const avatarUrl = `https://${process.env["AWS_S3_BUCKET"]}.s3.amazonaws.com/${key}`
+      const avatarUrl = `https://${process.env['AWS_S3_BUCKET']}.s3.amazonaws.com/${key}`
 
       res.status(200).json({ uploadUrl, avatarUrl })
     } catch (error) {
@@ -62,7 +64,11 @@ export const userController = {
     }
   },
 
-  async patchMe(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async patchMe(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const userId = req.userId!
       const input = updateMeSchema.parse(req.body)
@@ -75,7 +81,9 @@ export const userController = {
       ])
 
       const creatorFields = { displayName, avatarUrl, bio, genre, location }
-      const hasCreatorUpdate = Object.values(creatorFields).some((v) => v !== undefined)
+      const hasCreatorUpdate = Object.values(creatorFields).some(
+        (v) => v !== undefined
+      )
 
       if (creatorProfile && hasCreatorUpdate) {
         await creatorService.updateCreatorProfile(
@@ -87,7 +95,11 @@ export const userController = {
 
       if (fanProfile) {
         if (displayName !== undefined) {
-          await fanService.updateFanProfile(fanProfile.id, { displayName }, userId)
+          await fanService.updateFanProfile(
+            fanProfile.id,
+            { displayName },
+            userId
+          )
         }
         if (genrePrefs !== undefined) {
           await fanService.updateGenrePrefs(fanProfile.id, genrePrefs, userId)
@@ -100,5 +112,3 @@ export const userController = {
     }
   },
 }
-
-

@@ -1,6 +1,6 @@
-import { captureException } from "../observability/sentry.js"
-import { logger } from "../logger/logger.js"
-import type { EmailMessage, EmailService } from "./email-service.js"
+import { captureException } from '../observability/sentry.js'
+import { logger } from '../logger/logger.js'
+import type { EmailMessage, EmailService } from './email-service.js'
 
 export class ConsoleEmailService implements EmailService {
   private readonly from: string
@@ -11,7 +11,7 @@ export class ConsoleEmailService implements EmailService {
 
   async send(message: EmailMessage): Promise<void> {
     try {
-      logger.info("email_message", {
+      logger.info('email_message', {
         from: this.from,
         to: message.to,
         subject: message.subject,
@@ -20,7 +20,7 @@ export class ConsoleEmailService implements EmailService {
       })
     } catch (err) {
       captureException(err, {
-        where: "ConsoleEmailService.send",
+        where: 'ConsoleEmailService.send',
         to: message.to,
         subject: message.subject,
       })

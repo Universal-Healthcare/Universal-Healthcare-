@@ -114,12 +114,12 @@ src/shared/
 
 ### Current modules
 
-| Module       | Routes                                                 | Status     |
-| ------------ | ------------------------------------------------------ | ---------- |
-| `auth`       | `POST /api/auth/register` · `POST /api/auth/login`    | ✅ shipped |
-| `users`      | `GET /api/users/me` · `PATCH /api/users/me` · `POST /api/users/me/avatar-upload-url` | ✅ shipped |
-| `creators`   | `GET /api/creators/:slug`                              | ✅ shipped |
-| `fans`       | `GET /api/fans/me` · `PUT /api/fans/me` · `PATCH /api/fans/me` · `PUT /api/fans/me/genre-prefs` | ✅ shipped |
+| Module     | Routes                                                                                          | Status     |
+| ---------- | ----------------------------------------------------------------------------------------------- | ---------- |
+| `auth`     | `POST /api/auth/register` · `POST /api/auth/login`                                              | ✅ shipped |
+| `users`    | `GET /api/users/me` · `PATCH /api/users/me` · `POST /api/users/me/avatar-upload-url`            | ✅ shipped |
+| `creators` | `GET /api/creators/:slug`                                                                       | ✅ shipped |
+| `fans`     | `GET /api/fans/me` · `PUT /api/fans/me` · `PATCH /api/fans/me` · `PUT /api/fans/me/genre-prefs` | ✅ shipped |
 
 Module rule: modules call **each other's services**, not each other's repositories. This keeps persistence ownership explicit and makes it cheap to swap Prisma or DB out later.
 
@@ -133,18 +133,18 @@ Module rule: modules call **each other's services**, not each other's repositori
 
 ### Cross-cutting helpers
 
-| Helper                       | Where                                           |
-| ---------------------------- | ----------------------------------------------- |
-| `AppError`                   | `src/shared/errors/app-error.ts`                |
-| `env` (zod-validated)        | `src/shared/config/env.ts`                      |
-| `logger` (JSON structured)   | `src/shared/logger/logger.ts`                   |
-| `requireAuth` middleware     | `src/shared/middleware/auth.middleware.ts`      |
-| `requestId` middleware       | `src/shared/middleware/request-id.middleware.ts`|
-| `requestLogger` middleware   | `src/shared/middleware/request-logger.middleware.ts` |
-| `buildRateLimiter`           | `src/shared/middleware/rate-limit.middleware.ts`|
-| `metricsMiddleware` + `metricsSnapshot` | `src/shared/observability/`           |
-| `installGracefulShutdown`    | `src/shared/lifecycle/graceful-shutdown.ts`     |
-| `createAvatarUploadUrl` (S3) | `src/shared/storage/s3.ts`                      |
+| Helper                                  | Where                                                |
+| --------------------------------------- | ---------------------------------------------------- |
+| `AppError`                              | `src/shared/errors/app-error.ts`                     |
+| `env` (zod-validated)                   | `src/shared/config/env.ts`                           |
+| `logger` (JSON structured)              | `src/shared/logger/logger.ts`                        |
+| `requireAuth` middleware                | `src/shared/middleware/auth.middleware.ts`           |
+| `requestId` middleware                  | `src/shared/middleware/request-id.middleware.ts`     |
+| `requestLogger` middleware              | `src/shared/middleware/request-logger.middleware.ts` |
+| `buildRateLimiter`                      | `src/shared/middleware/rate-limit.middleware.ts`     |
+| `metricsMiddleware` + `metricsSnapshot` | `src/shared/observability/`                          |
+| `installGracefulShutdown`               | `src/shared/lifecycle/graceful-shutdown.ts`          |
+| `createAvatarUploadUrl` (S3)            | `src/shared/storage/s3.ts`                           |
 
 See [Environment](./environment.md) for the env variables these consume.
 
@@ -158,7 +158,7 @@ Existing routes:
 
 - `/` — landing + login state
 - `/register`, `/login` — auth flows
-- `/profile/edit` — self-service profile update (creator *or* fan)
+- `/profile/edit` — self-service profile update (creator _or_ fan)
 - `/creators/[slug]` — public creator page
 
 ---
@@ -184,10 +184,10 @@ Today `App.tsx` renders a single Expo placeholder; the rest of the surface is re
 
 ## Shared packages
 
-| Package           | Purpose                                                                                    |
-| ----------------- | ------------------------------------------------------------------------------------------ |
-| `packages/shared` | Single source of truth for Zod schemas (`loginSchema`, `registerSchema`, `updateMeSchema`) and DTOs (`AuthResponse`, `MeResponse`, `CreatorProfileResponse`, `FanProfileResponse`). |
-| `packages/stellar`| Compile-only scaffolding for a future Stellar payment / data-provenance layer. Exports placeholder types (`StellarAccountReference`, `StellarNetworkConfig`) and the `StellarPaymentClient` interface — no blockchain calls yet. |
+| Package            | Purpose                                                                                                                                                                                                                          |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/shared`  | Single source of truth for Zod schemas (`loginSchema`, `registerSchema`, `updateMeSchema`) and DTOs (`AuthResponse`, `MeResponse`, `CreatorProfileResponse`, `FanProfileResponse`).                                              |
+| `packages/stellar` | Compile-only scaffolding for a future Stellar payment / data-provenance layer. Exports placeholder types (`StellarAccountReference`, `StellarNetworkConfig`) and the `StellarPaymentClient` interface — no blockchain calls yet. |
 
 When a schema in `@universal-healthcare/shared` changes, every consumer — API, web, mobile — breaks loudly through TypeScript. That's the point.
 

@@ -1,20 +1,20 @@
-import bcrypt from "bcryptjs"
-import { prisma } from "../../../shared/database/prisma.js"
-import { env } from "../../../shared/config/env.js"
-import { AppError } from "../../../shared/errors/app-error.js"
-import { getEmailService } from "../../../shared/email/email-service.js"
-import { logger } from "../../../shared/logger/logger.js"
-import { userService } from "../../users/services/user.service.js"
-import { passwordResetRepository } from "../repositories/password-reset.repository.js"
-import { tokenService } from "./token.service.js"
+import bcrypt from 'bcryptjs'
+import { prisma } from '../../../shared/database/prisma.js'
+import { env } from '../../../shared/config/env.js'
+import { AppError } from '../../../shared/errors/app-error.js'
+import { getEmailService } from '../../../shared/email/email-service.js'
+import { logger } from '../../../shared/logger/logger.js'
+import { userService } from '../../users/services/user.service.js'
+import { passwordResetRepository } from '../repositories/password-reset.repository.js'
+import { tokenService } from './token.service.js'
 
 const PASSWORD_SALT_ROUNDS = 10
 const HASH_SALT_ROUNDS = 8
-const RESET_PATH = "/reset-password"
+const RESET_PATH = '/reset-password'
 
 function buildResetUrl(rawToken: string): string {
   const url = new URL(RESET_PATH, env.APP_URL)
-  url.searchParams.set("token", rawToken)
+  url.searchParams.set('token', rawToken)
   return url.toString()
 }
 
@@ -37,7 +37,7 @@ export const passwordResetService = {
     // Never reveal whether the email exists.
     const user = await userService.findByEmail(email)
     if (!user) {
-      logger.info("password_reset_request_no_user", { email })
+      logger.info('password_reset_request_no_user', { email })
       return
     }
 
@@ -47,19 +47,23 @@ export const passwordResetService = {
       Date.now() + env.PASSWORD_RESET_TTL_MINUTES * 60 * 1000
     )
 
-    await passwordResetRepository.create({ userId: user.id, tokenHash, expiresAt })
+    await passwordResetRepository.create({
+      userId: user.id,
+      tokenHash,
+      expiresAt,
+    })
 
     const url = buildResetUrl(rawToken)
     try {
       await getEmailService().send({
         to: user.email,
-        subject: "Reset your Universal Healthcare password",
+        subject: 'Reset your Universal Healthcare password',
         text: `Reset your password by opening: ${url}`,
         html: `<p>Reset your Universal Healthcare password by opening <a href="${url}">${url}</a>. This link expires in ${env.PASSWORD_RESET_TTL_MINUTES} minutes. If you did not request this, ignore this email.</p>`,
       })
-      logger.info("password_reset_email_sent", { userId: user.id })
+      logger.info('password_reset_email_sent', { userId: user.id })
     } catch (err) {
-      logger.error("password_reset_email_failed", {
+      logger.error('password_reset_email_failed', {
         userId: user.id,
         err: (err as Error).message,
       })
@@ -75,20 +79,23 @@ export const passwordResetService = {
       if (row.expiresAt.getTime() < Date.now()) {
         throw new AppError(
           410,
-          "RESET_TOKEN_EXPIRED",
-          "Reset link has expired; request a new one"
+          'RESET_TOKEN_EXPIRED',
+          'Reset link has expired; request a new one'
         )
       }
       const user = await userService.findById(row.userId)
       if (!user) {
-        throw new AppError(400, "INVALID_RESET_TOKEN", "Reset link is invalid")
+        throw new AppError(400, 'INVALID_RESET_TOKEN', 'Reset link is invalid')
       }
-      const isSameAsCurrent = await bcrypt.compare(newPassword, user.passwordHash)
+      const isSameAsCurrent = await bcrypt.compare(
+        newPassword,
+        user.passwordHash
+      )
       if (isSameAsCurrent) {
         throw new AppError(
           400,
-          "PASSWORD_REUSED",
-          "New password must be different from the current password"
+          'PASSWORD_REUSED',
+          'New password must be different from the current password'
         )
       }
       const passwordHash = await bcrypt.hash(newPassword, PASSWORD_SALT_ROUNDS)
@@ -106,9 +113,9 @@ export const passwordResetService = {
         }),
       ])
 
-      logger.info("password_reset_complete", { userId: user.id })
+      logger.info('password_reset_complete', { userId: user.id })
       return
     }
-    throw new AppError(400, "INVALID_RESET_TOKEN", "Reset link is invalid")
+    throw new AppError(400, 'INVALID_RESET_TOKEN', 'Reset link is invalid')
   },
 }

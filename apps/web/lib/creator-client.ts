@@ -1,10 +1,10 @@
-import type { CreatorProfileResponse } from "@universal-healthcare/shared"
-import { apiFetch } from "./api-client"
+import type { CreatorProfileResponse } from '@universal-healthcare/shared'
+import { apiFetch } from './api-client'
 
 export function getCreatorBySlug(
   slug: string
 ): Promise<CreatorProfileResponse> {
-  return apiFetch<CreatorProfileResponse>(`/api/creators/${encodeURIComponent(slug)}`)
+  return apiFetch<CreatorProfileResponse>(
+    `/api/creators/${encodeURIComponent(slug)}`
+  )
 }
-
-

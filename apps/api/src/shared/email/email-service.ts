@@ -22,7 +22,7 @@ export function setEmailService(service: EmailService): void {
 export function getEmailService(): EmailService {
   if (!instance) {
     throw new Error(
-      "EmailService is not configured. Call setEmailService() during app bootstrap (see server.ts)."
+      'EmailService is not configured. Call setEmailService() during app bootstrap (see server.ts).'
     )
   }
   return instance

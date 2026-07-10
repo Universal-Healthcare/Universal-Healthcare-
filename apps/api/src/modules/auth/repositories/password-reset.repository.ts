@@ -1,4 +1,4 @@
-import { prisma } from "../../../shared/database/prisma.js"
+import { prisma } from '../../../shared/database/prisma.js'
 
 export interface PasswordResetTokenRow {
   id: string

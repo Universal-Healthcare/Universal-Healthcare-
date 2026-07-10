@@ -1,43 +1,46 @@
-import js from "@eslint/js";
-import globals from "globals";
-import tseslint from "typescript-eslint";
+import js from '@eslint/js'
+import globals from 'globals'
+import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   {
     ignores: [
-      "**/node_modules/**",
-      "**/dist/**",
-      "**/.next/**",
-      "**/.expo/**",
-      "**/coverage/**",
-      "**/generated/**",
-      "**/next-env.d.ts"
-    ]
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/.next/**',
+      '**/.expo/**',
+      '**/coverage/**',
+      '**/generated/**',
+      '**/next-env.d.ts',
+    ],
   },
   {
     ...js.configs.recommended,
-    files: ["**/*.{js,mjs,cjs}"],
+    files: ['**/*.{js,mjs,cjs}'],
     languageOptions: {
       globals: {
-        ...globals.node
-      }
+        ...globals.node,
+      },
     },
     rules: {
-      "no-console": "off"
-    }
+      'no-console': 'off',
+    },
   },
   {
-    files: ["**/*.{ts,tsx}"],
+    files: ['**/*.{ts,tsx}'],
     extends: [...tseslint.configs.recommended],
     languageOptions: {
       globals: {
         ...globals.node,
-        ...globals.browser
-      }
+        ...globals.browser,
+      },
     },
     rules: {
-      "no-console": "off",
-      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }]
-    }
+      'no-console': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_' },
+      ],
+    },
   }
-);
+)

@@ -1,27 +1,27 @@
-"use client"
+'use client'
 
-import { useCallback, useEffect, useState } from "react"
-import type { MeResponse } from "@universal-healthcare/shared"
-import { useAuth } from "../../../lib/auth-context"
-import { getMe } from "../../../lib/user-client"
-import { EditProfileForm } from "../../../components/profile/edit-profile-form"
+import { useCallback, useEffect, useState } from 'react'
+import type { MeResponse } from '@universal-healthcare/shared'
+import { useAuth } from '../../../lib/auth-context'
+import { getMe } from '../../../lib/user-client'
+import { EditProfileForm } from '../../../components/profile/edit-profile-form'
 
 type LoadState =
-  | { status: "loading" }
-  | { status: "error"; message: string }
-  | { status: "ok"; data: MeResponse }
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'ok'; data: MeResponse }
 
 export default function EditProfilePage() {
   const { token } = useAuth()
-  const [state, setState] = useState<LoadState>({ status: "loading" })
+  const [state, setState] = useState<LoadState>({ status: 'loading' })
 
   const load = useCallback(async () => {
     if (!token) return
     try {
       const data = await getMe(token)
-      setState({ status: "ok", data })
+      setState({ status: 'ok', data })
     } catch {
-      setState({ status: "error", message: "Failed to load profile" })
+      setState({ status: 'error', message: 'Failed to load profile' })
     }
   }, [token])
 
@@ -33,22 +33,21 @@ export default function EditProfilePage() {
     return <p>Please log in to edit your profile.</p>
   }
 
-  if (state.status === "loading") {
+  if (state.status === 'loading') {
     return <p>Loading…</p>
   }
 
-  if (state.status === "error") {
-    return <p role="alert">{state.message}</p>
+  if (state.status === 'error') {
+    return <p role='alert'>{state.message}</p>
   }
 
   const { creatorProfile, fanProfile } = state.data.user
 
   const initialValues = {
-    displayName:
-      creatorProfile?.displayName ?? fanProfile?.displayName ?? "",
-    bio: creatorProfile?.bio ?? "",
-    genre: creatorProfile?.genre ?? "",
-    location: creatorProfile?.location ?? "",
+    displayName: creatorProfile?.displayName ?? fanProfile?.displayName ?? '',
+    bio: creatorProfile?.bio ?? '',
+    genre: creatorProfile?.genre ?? '',
+    location: creatorProfile?.location ?? '',
     genrePrefs: fanProfile?.genrePrefs ?? [],
   }
 
@@ -63,5 +62,3 @@ export default function EditProfilePage() {
     </main>
   )
 }
-
-

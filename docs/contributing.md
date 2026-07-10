@@ -36,14 +36,14 @@ tools/ci-local.sh           # full CI suite, incl. docker, ~3 min
 
 ## Coding standards
 
-| Standard                      | Where                                                                |
-| ----------------------------- | -------------------------------------------------------------------- |
-| TypeScript `strict` everywhere | `tsconfig.base.json`                                                |
-| ESLint flat config            | `eslint.config.mjs` — `pnpm lint` (or `pnpm lint --filter <pkg>`)    |
-| Prettier                      | `.prettierrc.json` — `pnpm format` (write) or `pnpm format:check`    |
-| Modular monolith convention   | [Architecture · `apps/api`](./architecture.md#backend--appsapi)       |
+| Standard                       | Where                                                                     |
+| ------------------------------ | ------------------------------------------------------------------------- |
+| TypeScript `strict` everywhere | `tsconfig.base.json`                                                      |
+| ESLint flat config             | `eslint.config.mjs` — `pnpm lint` (or `pnpm lint --filter <pkg>`)         |
+| Prettier                       | `.prettierrc.json` — `pnpm format` (write) or `pnpm format:check`         |
+| Modular monolith convention    | [Architecture · `apps/api`](./architecture.md#backend--appsapi)           |
 | **Shared contracts first**     | If a shape crosses api ↔ web, define it in `@universal-healthcare/shared` |
-| Tests for any behaviour change | [Testing](./testing.md)                                             |
+| Tests for any behaviour change | [Testing](./testing.md)                                                   |
 
 If a `pnpm lint` or `pnpm typecheck` warning appears for code you didn't touch, it's almost always a transitive regression — fix the root cause, don't suppress locally.
 
@@ -102,7 +102,7 @@ A PR is review-ready when every box here is true:
 
 ## Contribution expectations
 
-- Be specific in PR descriptions — *what* changed, *why*, and *how you verified*. Bullet the verification (`pnpm test`, `pnpm typecheck`, manual URL hit).
+- Be specific in PR descriptions — _what_ changed, _why_, and _how you verified_. Bullet the verification (`pnpm test`, `pnpm typecheck`, manual URL hit).
 - Don't commit secrets, `.env` files, or generated artifacts. `.env.example` may grow; `.env` never does.
 - Prefer extending the existing module / package structure over introducing new top-level layers. If you're sure you need a new layer, write that up in the PR description.
 - Avoid drive-by refactors. Refactors that span multiple modules belong in their own PR with their own description.
@@ -111,13 +111,13 @@ A PR is review-ready when every box here is true:
 
 ## Common pitfalls
 
-| Symptom                                                | Almost-always-the-cause                              |
-| ------------------------------------------------------ | ---------------------------------------------------- |
-| Web app can't find `@universal-healthcare/shared`      | Missing `transpilePackages` in `next.config.mjs`     |
-| `vitest: not found` in a sub-subpackage               | That subpackage never ran `pnpm install`; re-run at workspace root |
-| `prisma generate` drift after schema change            | Run it: `pnpm --filter @universal-healthcare/api exec prisma generate` |
-| ESLint flat config warnings                           | Run `pnpm format` before chasing them by hand       |
-| `pnpm-lock.yaml` out of sync with team                 | Always commit the lockfile; never edit it by hand    |
+| Symptom                                                          | Almost-always-the-cause                                                                                                                                                                                       |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Web app can't find `@universal-healthcare/shared`                | Missing `transpilePackages` in `next.config.mjs`                                                                                                                                                              |
+| `vitest: not found` in a sub-subpackage                          | That subpackage never ran `pnpm install`; re-run at workspace root                                                                                                                                            |
+| `prisma generate` drift after schema change                      | Run it: `pnpm --filter @universal-healthcare/api exec prisma generate`                                                                                                                                        |
+| ESLint flat config warnings                                      | Run `pnpm format` before chasing them by hand                                                                                                                                                                 |
+| `pnpm-lock.yaml` out of sync with team                           | Always commit the lockfile; never edit it by hand                                                                                                                                                             |
 | Install / lockfile or docker build fails locally but CI is green | Run `tools/ci-local.sh --no-docker` to isolate the install / turbo / docs layers from the docker layer; if the failure is docker-specific, run `tools/ci-local.sh` (no flag) to include the docker build step |
 
 ---

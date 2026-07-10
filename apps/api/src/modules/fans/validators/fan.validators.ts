@@ -1,4 +1,4 @@
-import { z } from "zod"
+import { z } from 'zod'
 
 export const createFanProfileSchema = z.object({
   displayName: z.string().min(1).max(80),

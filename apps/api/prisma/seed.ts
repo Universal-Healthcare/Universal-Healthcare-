@@ -13,12 +13,12 @@
  * exec prisma db seed` (or `npx prisma db seed`) to run.
  */
 
-import { PrismaClient } from "@prisma/client"
-import bcrypt from "bcryptjs"
+import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
-const DEMO_PASSWORD = "Password123!"
+const DEMO_PASSWORD = 'Password123!'
 
 async function userExists(email: string): Promise<boolean> {
   const existing = await prisma.user.findUnique({
@@ -29,7 +29,7 @@ async function userExists(email: string): Promise<boolean> {
 }
 
 async function seedCreator(passwordHash: string): Promise<void> {
-  const email = "creator@universal-healthcare.local"
+  const email = 'creator@universal-healthcare.local'
   if (await userExists(email)) return
 
   await prisma.user.create({
@@ -39,11 +39,11 @@ async function seedCreator(passwordHash: string): Promise<void> {
       emailVerified: true,
       creatorProfile: {
         create: {
-          displayName: "Dr. Demo Creator",
-          slug: "demo-creator",
-          bio: "A seeded demo creator account for local development and load tests.",
-          genre: "primary-care",
-          location: "Demo City",
+          displayName: 'Dr. Demo Creator',
+          slug: 'demo-creator',
+          bio: 'A seeded demo creator account for local development and load tests.',
+          genre: 'primary-care',
+          location: 'Demo City',
           isVerified: true,
         },
       },
@@ -53,7 +53,7 @@ async function seedCreator(passwordHash: string): Promise<void> {
 }
 
 async function seedFan(passwordHash: string): Promise<void> {
-  const email = "fan@universal-healthcare.local"
+  const email = 'fan@universal-healthcare.local'
   if (await userExists(email)) return
 
   await prisma.user.create({
@@ -63,8 +63,8 @@ async function seedFan(passwordHash: string): Promise<void> {
       emailVerified: true,
       fanProfile: {
         create: {
-          displayName: "Demo Fan",
-          genrePrefs: JSON.stringify(["primary-care", "cardiology"]),
+          displayName: 'Demo Fan',
+          genrePrefs: JSON.stringify(['primary-care', 'cardiology']),
         },
       },
     },
@@ -73,7 +73,7 @@ async function seedFan(passwordHash: string): Promise<void> {
 }
 
 async function seedUnverified(passwordHash: string): Promise<void> {
-  const email = "unverified@universal-healthcare.local"
+  const email = 'unverified@universal-healthcare.local'
   if (await userExists(email)) return
 
   await prisma.user.create({
@@ -93,7 +93,7 @@ async function main(): Promise<void> {
   await seedFan(passwordHash)
   await seedUnverified(passwordHash)
 
-  console.log("")
+  console.log('')
   console.log(`Seed complete. Demo password: ${DEMO_PASSWORD}`)
 }
 

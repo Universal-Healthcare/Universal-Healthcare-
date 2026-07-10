@@ -1,4 +1,4 @@
-export type ActivationRole = "creator" | "fan"
+export type ActivationRole = 'creator' | 'fan'
 
 export interface AuthUser {
   id: string

@@ -1,4 +1,4 @@
-import { apiFetch } from "./api-client"
+import { apiFetch } from './api-client'
 
 export interface CreatorProfile {
   id: string
@@ -15,7 +15,5 @@ export interface CreatorProfile {
 }
 
 export function getCreatorBySlug(slug: string): Promise<CreatorProfile> {
-  return apiFetch<CreatorProfile>(
-    `/api/creators/${encodeURIComponent(slug)}`
-  )
+  return apiFetch<CreatorProfile>(`/api/creators/${encodeURIComponent(slug)}`)
 }

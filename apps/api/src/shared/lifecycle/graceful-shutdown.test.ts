@@ -1,14 +1,17 @@
-import { EventEmitter } from "node:events"
-import { describe, expect, it, vi, beforeEach } from "vitest"
+import { EventEmitter } from 'node:events'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-vi.mock("../database/prisma.js", () => ({
+vi.mock('../database/prisma.js', () => ({
   prisma: {
     $disconnect: vi.fn().mockResolvedValue(undefined),
   },
 }))
 
-import { prisma } from "../database/prisma.js"
-import { installGracefulShutdown, shutdownForTest } from "./graceful-shutdown.js"
+import { prisma } from '../database/prisma.js'
+import {
+  installGracefulShutdown,
+  shutdownForTest,
+} from './graceful-shutdown.js'
 
 class FakeServer {
   private listeners: Array<(err?: Error) => void> = []
@@ -23,26 +26,29 @@ class FakeServer {
   }
 }
 
-describe("graceful-shutdown", () => {
+describe('graceful-shutdown', () => {
   beforeEach(() => {
     shutdownForTest()
     vi.clearAllMocks()
   })
 
-  it("traps SIGTERM, closes the server and disconnects prisma", async () => {
+  it('traps SIGTERM, closes the server and disconnects prisma', async () => {
     const signals = new EventEmitter()
     const server = new FakeServer()
-    installGracefulShutdown({ server: server as never, signals, drainTimeoutMs: 100, forceExitMs: 5000 })
+    installGracefulShutdown({
+      server: server as never,
+      signals,
+      drainTimeoutMs: 100,
+      forceExitMs: 5000,
+    })
 
     let exitCode: number | undefined
-    const exitSpy = vi
-      .spyOn(process, "exit")
-      .mockImplementation((code) => {
-        exitCode = typeof code === "number" ? code : 0
-        return undefined as never
-      })
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((code) => {
+      exitCode = typeof code === 'number' ? code : 0
+      return undefined as never
+    })
 
-    signals.emit("SIGTERM", "SIGTERM")
+    signals.emit('SIGTERM', 'SIGTERM')
     expect(server.hasPending()).toBe(true)
     server.finishClose()
 
@@ -53,11 +59,11 @@ describe("graceful-shutdown", () => {
     exitSpy.mockRestore()
   })
 
-  it("is idempotent — installing twice only registers one handler chain", () => {
+  it('is idempotent — installing twice only registers one handler chain', () => {
     const signals = new EventEmitter()
     const server = new FakeServer()
     installGracefulShutdown({ server: server as never, signals })
     installGracefulShutdown({ server: server as never, signals })
-    expect(signals.listenerCount("SIGTERM")).toBe(1)
+    expect(signals.listenerCount('SIGTERM')).toBe(1)
   })
 })

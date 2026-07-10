@@ -1,7 +1,7 @@
-import type { NextFunction, Request, Response } from "express"
-import { authService } from "../services/auth.service.js"
-import { emailVerificationService } from "../services/email-verification.service.js"
-import { passwordResetService } from "../services/password-reset.service.js"
+import type { NextFunction, Request, Response } from 'express'
+import { authService } from '../services/auth.service.js'
+import { emailVerificationService } from '../services/email-verification.service.js'
+import { passwordResetService } from '../services/password-reset.service.js'
 import {
   forgotPasswordSchema,
   loginSchema,
@@ -10,10 +10,14 @@ import {
   resendVerificationSchema,
   resetPasswordSchema,
   verifyEmailSchema,
-} from "../validators/auth.validators.js"
+} from '../validators/auth.validators.js'
 
 export const authController = {
-  async register(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async register(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const input = registerSchema.parse(req.body)
       const result = await authService.register(input)
@@ -33,7 +37,11 @@ export const authController = {
     }
   },
 
-  async refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async refresh(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const input = refreshSchema.parse(req.body)
       const result = await authService.refresh(input.refreshToken)
@@ -46,7 +54,7 @@ export const authController = {
   async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const refreshToken =
-        typeof req.body?.refreshToken === "string"
+        typeof req.body?.refreshToken === 'string'
           ? (req.body.refreshToken as string)
           : undefined
       await authService.logout(refreshToken)
@@ -56,7 +64,11 @@ export const authController = {
     }
   },
 
-  async verifyEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async verifyEmail(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const input = verifyEmailSchema.parse(req.body)
       await emailVerificationService.consume(input.token)

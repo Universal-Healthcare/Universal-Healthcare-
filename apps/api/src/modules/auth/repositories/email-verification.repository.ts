@@ -1,4 +1,4 @@
-import { prisma } from "../../../shared/database/prisma.js"
+import { prisma } from '../../../shared/database/prisma.js'
 
 export interface EmailVerificationTokenRow {
   id: string
@@ -20,7 +20,7 @@ export const emailVerificationRepository = {
   ): Promise<EmailVerificationTokenRow | null> {
     return prisma.emailVerificationToken.findFirst({
       where: { userId, usedAt: null, expiresAt: { gt: now } },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     })
   },
 

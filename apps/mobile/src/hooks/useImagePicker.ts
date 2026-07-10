@@ -1,5 +1,5 @@
-import { useState } from "react"
-import * as ImagePicker from "expo-image-picker"
+import { useState } from 'react'
+import * as ImagePicker from 'expo-image-picker'
 
 export interface PickedImage {
   uri: string
@@ -13,16 +13,15 @@ export function useImagePicker() {
   async function pickImage(): Promise<PickedImage | null> {
     setError(null)
 
-    const permission =
-      await ImagePicker.requestMediaLibraryPermissionsAsync()
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
 
     if (!permission.granted) {
-      setError("Permission to access photos was denied")
+      setError('Permission to access photos was denied')
       return null
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
@@ -35,7 +34,7 @@ export function useImagePicker() {
     const asset = result.assets[0]!
     const picked: PickedImage = {
       uri: asset.uri,
-      mimeType: asset.mimeType ?? "image/jpeg",
+      mimeType: asset.mimeType ?? 'image/jpeg',
     }
     setImage(picked)
     return picked

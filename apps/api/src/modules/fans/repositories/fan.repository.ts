@@ -1,9 +1,9 @@
-import { prisma } from "../../../shared/database/prisma.js"
+import { prisma } from '../../../shared/database/prisma.js'
 import type {
   CreateFanProfileInput,
   FanProfile,
   UpdateFanProfileInput,
-} from "../types/fan.types.js"
+} from '../types/fan.types.js'
 
 type RawFanProfile = {
   id: string

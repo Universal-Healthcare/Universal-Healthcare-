@@ -1,5 +1,5 @@
-import { userRepository } from "../repositories/user.repository.js"
-import type { CreateUserInput, User } from "../types/user.types.js"
+import { userRepository } from '../repositories/user.repository.js'
+import type { CreateUserInput, User } from '../types/user.types.js'
 
 export const userService = {
   findByEmail(email: string): Promise<User | null> {
@@ -12,9 +12,7 @@ export const userService = {
 
   findByIdWithProfiles(
     id: string
-  ): Promise<
-    (User & { creatorProfile: unknown; fanProfile: unknown }) | null
-  > {
+  ): Promise<(User & { creatorProfile: unknown; fanProfile: unknown }) | null> {
     return userRepository.findByIdWithProfiles(id)
   },
 

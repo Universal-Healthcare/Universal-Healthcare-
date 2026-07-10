@@ -6,7 +6,7 @@ export {
   resendVerificationSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
-} from "@universal-healthcare/shared"
+} from '@universal-healthcare/shared'
 export type {
   LoginInput,
   RegisterInput,
@@ -15,4 +15,4 @@ export type {
   ResendVerificationInput,
   ForgotPasswordInput,
   ResetPasswordInput,
-} from "@universal-healthcare/shared"
+} from '@universal-healthcare/shared'

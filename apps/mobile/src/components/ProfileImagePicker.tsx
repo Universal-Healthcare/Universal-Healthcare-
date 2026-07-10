@@ -1,11 +1,5 @@
-import {
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native"
-import { useImagePicker } from "../hooks/useImagePicker"
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useImagePicker } from '../hooks/useImagePicker'
 
 interface Props {
   currentAvatarUrl: string | null
@@ -29,12 +23,16 @@ export default function ProfileImagePicker({
 
   return (
     <View style={styles.container}>
-      <Pressable onPress={handlePress} accessibilityRole="button" accessibilityLabel="Pick profile image">
+      <Pressable
+        onPress={handlePress}
+        accessibilityRole='button'
+        accessibilityLabel='Pick profile image'
+      >
         {displayUri ? (
           <Image
             source={{ uri: displayUri }}
             style={styles.avatar}
-            accessibilityLabel="Profile avatar"
+            accessibilityLabel='Profile avatar'
           />
         ) : (
           <View style={[styles.avatar, styles.placeholder]}>
@@ -52,7 +50,7 @@ export default function ProfileImagePicker({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: "center",
+    alignItems: 'center',
     marginBottom: 20,
   },
   avatar: {
@@ -61,22 +59,22 @@ const styles = StyleSheet.create({
     borderRadius: 60,
   },
   placeholder: {
-    backgroundColor: "#ddd",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: '#ddd',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   placeholderText: {
     fontSize: 36,
-    color: "#999",
+    color: '#999',
   },
   error: {
-    color: "red",
+    color: 'red',
     marginTop: 8,
     fontSize: 14,
   },
   hint: {
     marginTop: 8,
     fontSize: 14,
-    color: "#888",
+    color: '#888',
   },
 })

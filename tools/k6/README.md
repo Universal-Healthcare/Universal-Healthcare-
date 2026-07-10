@@ -24,11 +24,11 @@ docker compose --profile sqlite exec -T api npx prisma db seed
 After seeding, three users exist with the same shared password
 `Password123!`:
 
-| Email                                       | Role       | Verified |
-| ------------------------------------------- | ---------- | -------- |
-| `creator@universal-healthcare.local`        | creator    | yes      |
-| `fan@universal-healthcare.local`            | fan        | yes      |
-| `unverified@universal-healthcare.local`     | (no role)  | no       |
+| Email                                   | Role      | Verified |
+| --------------------------------------- | --------- | -------- |
+| `creator@universal-healthcare.local`    | creator   | yes      |
+| `fan@universal-healthcare.local`        | fan       | yes      |
+| `unverified@universal-healthcare.local` | (no role) | no       |
 
 ## Run
 
@@ -56,13 +56,13 @@ Total: **50 RPS** sustained for ~32s (fans_me starts 2s after login).
 
 ## Thresholds (the run fails if any are breached)
 
-| Metric                                  | Target        |
-| --------------------------------------- | ------------- |
-| `http_req_duration{scenario:login}`     | p(95) < 500ms |
-| `http_req_duration{scenario:fans_me}`   | p(95) < 500ms |
-| `http_req_failed`                       | rate < 1%     |
-| `login_failures`                        | rate < 1%     |
-| `fans_me_failures`                      | rate < 1%     |
+| Metric                                | Target        |
+| ------------------------------------- | ------------- |
+| `http_req_duration{scenario:login}`   | p(95) < 500ms |
+| `http_req_duration{scenario:fans_me}` | p(95) < 500ms |
+| `http_req_failed`                     | rate < 1%     |
+| `login_failures`                      | rate < 1%     |
+| `fans_me_failures`                    | rate < 1%     |
 
 ## How auth works
 

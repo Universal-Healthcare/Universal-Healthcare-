@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
-import Link from "next/link"
-import { useAuth } from "../lib/auth-context"
+import Link from 'next/link'
+import { useAuth } from '../lib/auth-context'
 
 export default function HomePage() {
   const { user, isLoading, logout } = useAuth()
@@ -19,8 +19,8 @@ export default function HomePage() {
       <main>
         <h1>Universal Healthcare Data Network</h1>
         <p>
-          <Link href="/login">Log in</Link> or{" "}
-          <Link href="/register">create an account</Link> to get started.
+          <Link href='/login'>Log in</Link> or{' '}
+          <Link href='/register'>create an account</Link> to get started.
         </p>
       </main>
     )
@@ -30,10 +30,9 @@ export default function HomePage() {
     <main>
       <h1>Universal Healthcare Data Network</h1>
       <p>You are logged in as {user.email}.</p>
-      <button type="button" onClick={logout}>
+      <button type='button' onClick={logout}>
         Log out
       </button>
     </main>
   )
 }
-

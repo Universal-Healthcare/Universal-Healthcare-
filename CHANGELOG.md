@@ -49,7 +49,7 @@ on every push.
 - **`.dockerignore`** at `apps/api/` to keep the build context lean
   (excludes `node_modules`, `.git`, `dist`, `.next`, `.env`, IDE files, etc.).
 - **`docker-entrypoint.sh`** — runs `npx prisma db push --skip-generate
-  --accept-data-loss` then exec's the CMD, so SIGTERM propagates correctly
+--accept-data-loss` then exec's the CMD, so SIGTERM propagates correctly
   to the Node process.
 - **`.env.example`** at the repo root for docker-compose. Documents every
   var with sensible defaults.
@@ -61,7 +61,7 @@ on every push.
   tagged with the commit SHA.
 - **`tools/ci-local.sh`** — one-command local CI suite. Mirrors every
   command each of the 7 CI workflows actually executes (`pnpm install
-  --frozen-lockfile` + 5 turbo commands + docs lints + `docker build`).
+--frozen-lockfile` + 5 turbo commands + docs lints + `docker build`).
   Uses `set -o pipefail` so pnpm / docker exit codes aren't swallowed by
   `tail`. Colorized output, per-step timings, `--no-docker` / `--quick` /
   `--no-color` flags, graceful skip if docker is missing, exit code = number
@@ -92,7 +92,7 @@ on every push.
 - **`apps/api/package.json`** — added `db:seed` and `db:reset` scripts
   alongside the existing `dev` / `build` / `start` / `lint` / `typecheck`
   / `test` scripts, plus a top-level `"prisma": { "seed": "tsx
-  prisma/seed.ts" }` block so `prisma db seed` Just Works.
+prisma/seed.ts" }` block so `prisma db seed` Just Works.
 - **Root `package.json`** — `pnpm.onlyBuiltDependencies` whitelist now
   includes `@sentry/cli` and `sharp` (in addition to the existing
   `@prisma/client` / `@prisma/engines` / `esbuild` / `prisma` entries).
@@ -118,14 +118,14 @@ on every push.
   CI's strict mode (now whitelisted), (3) lockfile integrity (regenerated
   from scratch).
 - `apps/api/Dockerfile` build itself: removed a broken `COPY ... 2>/dev/null
-  || true` line (Docker parsed the shell syntax as part of the source
+|| true` line (Docker parsed the shell syntax as part of the source
   path and errored with `failed to compute cache key... "/||": not found`).
   The line was redundant — `pnpm deploy --prod` already bundles the
   generated Prisma client.
 - The `@sentry/nextjs: ^8` dep that was added locally during the Sentry
   commit but never included in that commit's `git add` list. The lockfile
   (committed) had the entry, so a fresh `git clone` + `pnpm install
-  --frozen-lockfile` would have failed.
+--frozen-lockfile` would have failed.
 - Docs CI: the linter was scanning `node_modules` (1,573 vendor markdown
   files, 133k+ false positives) because the glob had no exclusion. Added
   `!**/node_modules/**` and `!**/.git/**` to the markdownlint-cli2
@@ -172,12 +172,12 @@ Stellar integration).
   password reset (`POST /api/auth/forgot-password`,
   `POST /api/auth/reset-password` with a `PASSWORD_REUSED` guard), and an
   activation flow where `POST /api/auth/register` requires `role: "creator"
-  | "fan"` + `displayName` + optional `profile` and atomically creates the
+| "fan"` + `displayName` + optional `profile` and atomically creates the
   User + CreatorProfile (with an auto-generated unique slug) or FanProfile
   in one Prisma transaction.
 - **Phase 2 — Creators list**: shared `paginationSchema` + `PaginationMeta` +
   `PaginatedResponse<T>` in `packages/shared`; `GET /api/creators?page=
-  &pageSize=&search=` — public, ordered by `createdAt desc`.
+&pageSize=&search=` — public, ordered by `createdAt desc`.
 - **Phase 2 — Web client**: `auth-client` methods for refresh, logout,
   verify-email, resend-verification, forgot-password, reset-password;
   `auth-context` stores both access + refresh tokens; the register form

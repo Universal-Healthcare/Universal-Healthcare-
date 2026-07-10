@@ -1,34 +1,28 @@
-import { useCallback, useEffect, useState } from "react"
-import {
-  ActivityIndicator,
-  Image,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native"
+import { useCallback, useEffect, useState } from 'react'
+import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native'
 import {
   getCreatorBySlug,
   type CreatorProfile,
-} from "../services/creator-service"
+} from '../services/creator-service'
 
 type LoadState =
-  | { status: "loading" }
-  | { status: "error"; message: string }
-  | { status: "ok"; profile: CreatorProfile }
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'ok'; profile: CreatorProfile }
 
 interface Props {
   slug: string
 }
 
 export default function CreatorProfileScreen({ slug }: Props) {
-  const [state, setState] = useState<LoadState>({ status: "loading" })
+  const [state, setState] = useState<LoadState>({ status: 'loading' })
 
   const load = useCallback(async () => {
     try {
       const profile = await getCreatorBySlug(slug)
-      setState({ status: "ok", profile })
+      setState({ status: 'ok', profile })
     } catch {
-      setState({ status: "error", message: "Creator not found" })
+      setState({ status: 'error', message: 'Creator not found' })
     }
   }, [slug])
 
@@ -36,15 +30,15 @@ export default function CreatorProfileScreen({ slug }: Props) {
     load()
   }, [load])
 
-  if (state.status === "loading") {
+  if (state.status === 'loading') {
     return (
       <View style={styles.center}>
-        <ActivityIndicator testID="loading-indicator" size="large" />
+        <ActivityIndicator testID='loading-indicator' size='large' />
       </View>
     )
   }
 
-  if (state.status === "error") {
+  if (state.status === 'error') {
     return (
       <View style={styles.center}>
         <Text>{state.message}</Text>
@@ -65,13 +59,15 @@ export default function CreatorProfileScreen({ slug }: Props) {
       ) : (
         <View
           style={[styles.avatar, styles.placeholderAvatar]}
-          accessibilityLabel="Default avatar"
+          accessibilityLabel='Default avatar'
         />
       )}
 
       <Text style={styles.displayName}>{profile.displayName}</Text>
 
-      {profile.isVerified && <Text accessibilityLabel="Verified">Verified</Text>}
+      {profile.isVerified && (
+        <Text accessibilityLabel='Verified'>Verified</Text>
+      )}
 
       {profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
 
@@ -89,13 +85,13 @@ export default function CreatorProfileScreen({ slug }: Props) {
 const styles = StyleSheet.create({
   center: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   container: {
     flex: 1,
     padding: 20,
-    alignItems: "center",
+    alignItems: 'center',
   },
   avatar: {
     width: 120,
@@ -104,23 +100,23 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   placeholderAvatar: {
-    backgroundColor: "#ddd",
+    backgroundColor: '#ddd',
   },
   displayName: {
     fontSize: 24,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginBottom: 8,
   },
   bio: {
     fontSize: 16,
-    color: "#666",
-    textAlign: "center",
+    color: '#666',
+    textAlign: 'center',
     marginTop: 12,
     marginBottom: 12,
   },
   detail: {
     fontSize: 14,
-    color: "#888",
+    color: '#888',
     marginTop: 4,
   },
 })

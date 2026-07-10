@@ -159,18 +159,18 @@ universal-healthcare-data-network/
 
 ## Tech Stack
 
-| Layer        | Stack                                                                  |
-| ------------ | ---------------------------------------------------------------------- |
-| Backend      | **Express** · **Prisma** (SQLite in dev, swap to Postgres for prod) · **TypeScript** |
-| Web          | **Next.js 15** (App Router) · **React 19** · **TypeScript**            |
-| Mobile       | **Expo** · **React Native** · **expo-image-picker**                    |
-| Shared       | **pnpm workspace** · **Turborepo** · **Zod**                           |
-| Auth         | **JWT** (`jsonwebtoken`) · **bcryptjs**                                |
-| Storage      | **AWS S3** for avatars via presigned URLs                              |
-| Testing      | **Vitest** + **Supertest** (api, web, shared) · **Jest** + **jest-expo** (mobile) |
-| Quality      | **TypeScript strict** · **ESLint flat config** · **Prettier**          |
-| CI           | **GitHub Actions** · one workflow per package, scoped via Turbo        |
-| Future       | **Stellar** integration scaffold for data provenance / payment flows  |
+| Layer   | Stack                                                                                |
+| ------- | ------------------------------------------------------------------------------------ |
+| Backend | **Express** · **Prisma** (SQLite in dev, swap to Postgres for prod) · **TypeScript** |
+| Web     | **Next.js 15** (App Router) · **React 19** · **TypeScript**                          |
+| Mobile  | **Expo** · **React Native** · **expo-image-picker**                                  |
+| Shared  | **pnpm workspace** · **Turborepo** · **Zod**                                         |
+| Auth    | **JWT** (`jsonwebtoken`) · **bcryptjs**                                              |
+| Storage | **AWS S3** for avatars via presigned URLs                                            |
+| Testing | **Vitest** + **Supertest** (api, web, shared) · **Jest** + **jest-expo** (mobile)    |
+| Quality | **TypeScript strict** · **ESLint flat config** · **Prettier**                        |
+| CI      | **GitHub Actions** · one workflow per package, scoped via Turbo                      |
+| Future  | **Stellar** integration scaffold for data provenance / payment flows                 |
 
 ---
 
@@ -243,22 +243,22 @@ pnpm --filter @universal-healthcare/api build   # prisma generate + tsc
 
 The current surface is:
 
-| Method | Path                              | Auth     | Description                                    |
-| ------ | --------------------------------- | -------- | ---------------------------------------------- |
-| GET    | `/health`                         | –        | Simple liveness probe (200)                    |
-| GET    | `/livez`                          | –        | Kubernetes-style liveness (process up)         |
-| GET    | `/readyz`                         | –        | Readiness probe (pings the DB; 503 on failure)  |
-| GET    | `/metrics`                        | –        | Prometheus text-format metrics                 |
-| POST   | `/api/auth/register`              | –        | Create account, returns user + JWT             |
-| POST   | `/api/auth/login`                 | –        | Verify credentials, returns user + JWT         |
-| GET    | `/api/users/me`                   | Bearer   | Current user + creator / fan profile           |
-| PATCH  | `/api/users/me`                   | Bearer   | Update own profile (display name, bio, etc.)  |
-| POST   | `/api/users/me/avatar-upload-url` | Bearer   | Issue a presigned S3 `PUT` URL (5 min TTL)     |
-| GET    | `/api/creators/:slug`             | –        | Public creator profile lookup                  |
-| GET    | `/api/fans/me`                    | Bearer   | Current fan profile                            |
-| PUT    | `/api/fans/me`                    | Bearer   | Create or replace own fan profile              |
-| PATCH  | `/api/fans/me`                    | Bearer   | Partial update of own fan profile              |
-| PUT    | `/api/fans/me/genre-prefs`        | Bearer   | Replace the genre-preferences array            |
+| Method | Path                              | Auth   | Description                                    |
+| ------ | --------------------------------- | ------ | ---------------------------------------------- |
+| GET    | `/health`                         | –      | Simple liveness probe (200)                    |
+| GET    | `/livez`                          | –      | Kubernetes-style liveness (process up)         |
+| GET    | `/readyz`                         | –      | Readiness probe (pings the DB; 503 on failure) |
+| GET    | `/metrics`                        | –      | Prometheus text-format metrics                 |
+| POST   | `/api/auth/register`              | –      | Create account, returns user + JWT             |
+| POST   | `/api/auth/login`                 | –      | Verify credentials, returns user + JWT         |
+| GET    | `/api/users/me`                   | Bearer | Current user + creator / fan profile           |
+| PATCH  | `/api/users/me`                   | Bearer | Update own profile (display name, bio, etc.)   |
+| POST   | `/api/users/me/avatar-upload-url` | Bearer | Issue a presigned S3 `PUT` URL (5 min TTL)     |
+| GET    | `/api/creators/:slug`             | –      | Public creator profile lookup                  |
+| GET    | `/api/fans/me`                    | Bearer | Current fan profile                            |
+| PUT    | `/api/fans/me`                    | Bearer | Create or replace own fan profile              |
+| PATCH  | `/api/fans/me`                    | Bearer | Partial update of own fan profile              |
+| PUT    | `/api/fans/me/genre-prefs`        | Bearer | Replace the genre-preferences array            |
 
 All `/api/*` routes are subject to per-IP rate limiting. Configure via `RATE_LIMIT_WINDOW_MS` and `RATE_LIMIT_MAX` (no-op in `NODE_ENV=test`).
 
@@ -275,7 +275,7 @@ Existing routes:
 - `/` – landing + login state
 - `/register` – new account
 - `/login` – existing account
-- `/profile/edit` – update your own profile (creator *or* fan)
+- `/profile/edit` – update your own profile (creator _or_ fan)
 - `/creators/[slug]` – public creator profile page
 
 ### `apps/mobile` – Expo / React Native client
@@ -319,11 +319,11 @@ A **compile-only** scaffold for a future Stellar-based payment or data-provenanc
 
 Every app keeps a committed `.env.example`. See **[`docs/environment.md`](docs/environment.md)** for the full table. The minimum to run locally:
 
-| App      | Required              | Optional                      |
-| -------- | --------------------- | ----------------------------- |
+| App      | Required                     | Optional                                                                                                           |
+| -------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `api`    | `DATABASE_URL`, `JWT_SECRET` | `PORT`, `NODE_ENV`, `JWT_EXPIRES_IN`, AWS creds for S3, `CORS_ORIGINS`, `RATE_LIMIT_*`, `TRUST_PROXY`, `LOG_LEVEL` |
-| `web`    | –                     | `NEXT_PUBLIC_API_URL` (default `http://localhost:4000`) |
-| `mobile` | –                     | `EXPO_PUBLIC_API_URL` (default `http://localhost:4000`) |
+| `web`    | –                            | `NEXT_PUBLIC_API_URL` (default `http://localhost:4000`)                                                            |
+| `mobile` | –                            | `EXPO_PUBLIC_API_URL` (default `http://localhost:4000`)                                                            |
 
 `apps/api/.env.test` is checked in with safe, test-only values.
 
@@ -342,12 +342,12 @@ pnpm check        # lint + typecheck + test, in that order
 
 CI mirrors that. Each package has its own workflow under `.github/workflows/`:
 
-- `api.yml`     – `lint · test · build`
-- `web.yml`     – `lint · test · build`
-- `mobile.yml`  – `lint · test`
-- `shared.yml`  – `lint · build`
+- `api.yml` – `lint · test · build`
+- `web.yml` – `lint · test · build`
+- `mobile.yml` – `lint · test`
+- `shared.yml` – `lint · build`
 - `stellar.yml` – `lint · build`
-- `docs.yml`    – `markdownlint + markdown-link-check`
+- `docs.yml` – `markdownlint + markdown-link-check`
 - `deploy-api.yml` – `docker build + push GHCR + trigger Render deploy`
 
 PRs only need to pass the workflows for the packages they touch (plus their downstream consumers via Turbo). See **[`docs/testing.md`](docs/testing.md)** for runner specifics and coverage notes.
@@ -400,12 +400,12 @@ Avatars are uploaded via presigned URLs returned by `POST /api/users/me/avatar-u
 
 ## Documentation
 
-| Doc                                         | What's in it                                                   |
-| ------------------------------------------- | -------------------------------------------------------------- |
+| Doc                                                | What's in it                                                                                         |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | **[`docs/architecture.md`](docs/architecture.md)** | Monorepo layout, modular monolith convention, how to add a module, client / shared integration notes |
-| **[`docs/contributing.md`](docs/contributing.md)**   | Coding standards, dev workflow, contribution expectations       |
-| **[`docs/testing.md`](docs/testing.md)**             | How to run tests, what each runner covers, what CI runs         |
-| **[`docs/environment.md`](docs/environment.md)**     | Every env var, every `.env.example`, secrets handling           |
+| **[`docs/contributing.md`](docs/contributing.md)** | Coding standards, dev workflow, contribution expectations                                            |
+| **[`docs/testing.md`](docs/testing.md)**           | How to run tests, what each runner covers, what CI runs                                              |
+| **[`docs/environment.md`](docs/environment.md)**   | Every env var, every `.env.example`, secrets handling                                                |
 
 ---
 

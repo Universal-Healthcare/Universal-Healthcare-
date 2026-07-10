@@ -1,6 +1,10 @@
-"use client"
+'use client'
 
-import type { AuthUser, LoginInput, RegisterInput } from "@universal-healthcare/shared"
+import type {
+  AuthUser,
+  LoginInput,
+  RegisterInput,
+} from '@universal-healthcare/shared'
 import {
   createContext,
   useCallback,
@@ -8,17 +12,17 @@ import {
   useEffect,
   useState,
   type ReactNode,
-} from "react"
+} from 'react'
 import {
   loginUser,
   logoutUser,
   refreshTokens,
   registerUser,
-} from "./auth-client"
+} from './auth-client'
 
-const ACCESS_TOKEN_KEY = "universal-healthcare.token"
-const REFRESH_TOKEN_KEY = "universal-healthcare.refreshToken"
-const USER_KEY = "universal-healthcare.user"
+const ACCESS_TOKEN_KEY = 'universal-healthcare.token'
+const REFRESH_TOKEN_KEY = 'universal-healthcare.refreshToken'
+const USER_KEY = 'universal-healthcare.user'
 
 interface AuthContextValue {
   user: AuthUser | null
@@ -61,10 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ) => {
       window.localStorage.setItem(ACCESS_TOKEN_KEY, nextAccess)
       window.localStorage.setItem(REFRESH_TOKEN_KEY, nextRefresh)
-      window.localStorage.setItem(
-        USER_KEY,
-        JSON.stringify(nextUser)
-      )
+      window.localStorage.setItem(USER_KEY, JSON.stringify(nextUser))
       void refreshExpiresAt // expiry is informational; the API enforces it
       setUser(nextUser)
       setToken(nextAccess)
@@ -109,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const refresh = useCallback(async () => {
-    if (!refreshToken) throw new Error("No refresh token")
+    if (!refreshToken) throw new Error('No refresh token')
     const result = await refreshTokens(refreshToken)
     persist(
       result.user,
@@ -140,7 +141,7 @@ export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext)
 
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider")
+    throw new Error('useAuth must be used within an AuthProvider')
   }
 
   return context

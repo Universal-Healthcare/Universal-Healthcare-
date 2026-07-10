@@ -1,14 +1,14 @@
-"use client"
+'use client'
 
-import { loginSchema } from "@universal-healthcare/shared"
-import { useState, type FormEvent } from "react"
-import { AuthApiError } from "../../lib/auth-client"
-import { useAuth } from "../../lib/auth-context"
+import { loginSchema } from '@universal-healthcare/shared'
+import { useState, type FormEvent } from 'react'
+import { AuthApiError } from '../../lib/auth-client'
+import { useAuth } from '../../lib/auth-context'
 
 export function LoginForm() {
   const { login } = useAuth()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -25,7 +25,7 @@ export function LoginForm() {
       const errors: Record<string, string> = {}
       for (const issue of result.error.issues) {
         const field = issue.path[0]
-        if (typeof field === "string" && !errors[field]) {
+        if (typeof field === 'string' && !errors[field]) {
           errors[field] = issue.message
         }
       }
@@ -41,7 +41,7 @@ export function LoginForm() {
       setSuccess(true)
     } catch (error) {
       setFormError(
-        error instanceof AuthApiError ? error.message : "Unable to log in"
+        error instanceof AuthApiError ? error.message : 'Unable to log in'
       )
     } finally {
       setIsSubmitting(false)
@@ -51,39 +51,37 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} noValidate>
       <div>
-        <label htmlFor="email">Email</label>
+        <label htmlFor='email'>Email</label>
         <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
+          id='email'
+          name='email'
+          type='email'
+          autoComplete='email'
           value={email}
           onChange={(event) => setEmail(event.target.value)}
         />
-        {fieldErrors.email && <p role="alert">{fieldErrors.email}</p>}
+        {fieldErrors.email && <p role='alert'>{fieldErrors.email}</p>}
       </div>
 
       <div>
-        <label htmlFor="password">Password</label>
+        <label htmlFor='password'>Password</label>
         <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
+          id='password'
+          name='password'
+          type='password'
+          autoComplete='current-password'
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
-        {fieldErrors.password && <p role="alert">{fieldErrors.password}</p>}
+        {fieldErrors.password && <p role='alert'>{fieldErrors.password}</p>}
       </div>
 
-      {formError && <p role="alert">{formError}</p>}
-      {success && <p role="status">You&apos;re logged in.</p>}
+      {formError && <p role='alert'>{formError}</p>}
+      {success && <p role='status'>You&apos;re logged in.</p>}
 
-      <button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Logging in..." : "Log in"}
+      <button type='submit' disabled={isSubmitting}>
+        {isSubmitting ? 'Logging in...' : 'Log in'}
       </button>
     </form>
   )
 }
-
-

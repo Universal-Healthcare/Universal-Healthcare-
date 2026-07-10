@@ -1,9 +1,9 @@
-import { prisma } from "../../../shared/database/prisma.js"
+import { prisma } from '../../../shared/database/prisma.js'
 import type {
   CreateCreatorInput,
   CreatorProfile,
   UpdateCreatorInput,
-} from "../types/creator.types.js"
+} from '../types/creator.types.js'
 
 export const creatorRepository = {
   findById(id: string): Promise<CreatorProfile | null> {
@@ -34,7 +34,7 @@ export const creatorRepository = {
       : {}
     return prisma.creatorProfile.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       skip: opts.skip,
       take: opts.take,
     })
@@ -53,7 +53,9 @@ export const creatorRepository = {
     return prisma.creatorProfile.count({ where })
   },
 
-  create(input: CreateCreatorInput & { slug: string }): Promise<CreatorProfile> {
+  create(
+    input: CreateCreatorInput & { slug: string }
+  ): Promise<CreatorProfile> {
     return prisma.creatorProfile.create({
       data: {
         userId: input.userId,

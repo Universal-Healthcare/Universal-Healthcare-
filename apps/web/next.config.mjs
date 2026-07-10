@@ -1,15 +1,15 @@
-import { withSentryConfig } from "@sentry/nextjs"
+import { withSentryConfig } from '@sentry/nextjs'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@universal-healthcare/shared"],
+  transpilePackages: ['@universal-healthcare/shared'],
   webpack: (config) => {
     // @universal-healthcare/shared uses NodeNext-style ".js" specifiers that point at
     // ".ts" source files; teach webpack to resolve those for the workspace
     // package since it isn't pre-compiled to dist.
     config.resolve.extensionAlias = {
       ...config.resolve.extensionAlias,
-      ".js": [".ts", ".tsx", ".js"],
+      '.js': ['.ts', '.tsx', '.js'],
     }
     return config
   },
@@ -32,5 +32,3 @@ export default withSentryConfig(nextConfig, {
   // Keep source maps out of the production bundle; upload separately if needed.
   dryRun: !process.env.SENTRY_AUTH_TOKEN,
 })
-
-

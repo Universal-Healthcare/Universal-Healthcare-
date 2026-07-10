@@ -7,7 +7,7 @@ body {
   font-family:
     system-ui,
     -apple-system,
-    "Segoe UI",
+    'Segoe UI',
     Roboto,
     sans-serif;
 }
@@ -42,12 +42,12 @@ button {
   cursor: pointer;
 }
 
-[role="alert"] {
+[role='alert'] {
   color: #b00020;
   margin: 0.25rem 0 0;
   font-size: 0.875rem;
 }
 
-[role="status"] {
+[role='status'] {
   color: #1a7f37;
 }

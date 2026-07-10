@@ -6,7 +6,8 @@ describe('App', () => {
   it('renders without crashing', () => {
     const { getByText } = render(<App />)
 
-    expect(getByText('Universal Healthcare Data Network mobile foundation')).toBeTruthy()
+    expect(
+      getByText('Universal Healthcare Data Network mobile foundation')
+    ).toBeTruthy()
   })
 })
-

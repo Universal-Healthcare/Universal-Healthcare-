@@ -7,7 +7,7 @@
 
 ## Context
 
-A workspace package exports Zod schemas and typed DTOs that every consumer in the monorepo (and *only* the monorepo) uses:
+A workspace package exports Zod schemas and typed DTOs that every consumer in the monorepo (and _only_ the monorepo) uses:
 
 - `apps/api` validates request bodies and shapes responses against it.
 - `apps/web` uses the same Zod schemas for client-side form validation.
@@ -22,7 +22,7 @@ We had three options for implementing the share:
 Constraints at the time:
 
 - Schema drift between client and server is a **correctness bug**, not a maintenance chore — we want loud failures.
-- We are not (yet) publishing the shared package to npm; consumption is *internal only*.
+- We are not (yet) publishing the shared package to npm; consumption is _internal only_.
 - Next.js bundling and Vitest both need to be able to resolve TypeScript directly.
 - pnpm workspace symlinks a `node_modules/@universal-healthcare/shared` to the package directory — by default that resolves through the `main` field.
 
@@ -36,7 +36,7 @@ We adopt **source-only, no build step**:
 - Both `apps/api` and `apps/web` consume the package via the pnpm workspace link — and because the `main` points at source, they import the `.ts` directly.
 - `next.config.mjs` in `apps/web` opts the package into Next's transpilation pipeline: `transpilePackages: ["@universal-healthcare/shared"]`.
 - Vitest configs in api/web alias `@universal-healthcare/shared` to its source file so the test runner can resolve it without a build: `path.resolve(dirname, "../../packages/shared/src/index.ts")`.
-- `packages/shared`'s TypeScript config uses `NodeNext` module + moduleResolution with `.js` extension imports — these are *compile-time only* and don't appear at runtime.
+- `packages/shared`'s TypeScript config uses `NodeNext` module + moduleResolution with `.js` extension imports — these are _compile-time only_ and don't appear at runtime.
 
 ---
 
@@ -56,13 +56,13 @@ We adopt **source-only, no build step**:
 - **TypeScript module mode has teeth.** `NodeNext` is the right choice, but it forces `.js` extension imports in shared package source — slightly less ergonomic for newcomers. Breaking the convention fails the consumers' typecheck.
 - **Next.js needs explicit opt-in.** Without `transpilePackages`, Next.js fails to load the package (or worse, fails silently in production builds). We've documented the requirement but not enforced it via tests.
 - **Vitest needs an explicit alias** for the package (we have one in `vitest.config.ts` per consumer). Without it, the test runner tries to resolve `@universal-healthcare/shared` against node_modules and fails.
-- **Bundle-leak risk.** If someone later adds *runtime* code to `@universal-healthcare/shared` (e.g. a server-only helper that's accidentally imported by the web client), it ends up bundled into the client. Zod schemas are fine; non-pure code is not.
+- **Bundle-leak risk.** If someone later adds _runtime_ code to `@universal-healthcare/shared` (e.g. a server-only helper that's accidentally imported by the web client), it ends up bundled into the client. Zod schemas are fine; non-pure code is not.
 
 ### Mitigations
 
 - `transpilePackages` is set in `next.config.mjs` and noted in [`docs/architecture.md`](../architecture.md). A small grep-based check in CI for `next.config.mjs` would catch regression.
 - `vitest.config.ts` aliases in both `apps/api` and `apps/web` keep tests in lockstep — they can't drift unless one is edited independently.
-- The shared package's exports are *intentionally* Zod schemas + types + small pure utilities (the existing `profileCompleteness` helper). Anything impure belongs in a package that's clearly marked client-only or server-only.
+- The shared package's exports are _intentionally_ Zod schemas + types + small pure utilities (the existing `profileCompleteness` helper). Anything impure belongs in a package that's clearly marked client-only or server-only.
 - If/when we publish: add a build step (`tsc -p tsconfig.build.json`) **without** changing the consumer story. Workspace consumers still import from source; the `dist/` is only for npm distribution.
 
 ---

@@ -1,11 +1,11 @@
-import { AppError } from "../../../shared/errors/app-error.js"
-import { generateUniqueSlug } from "../../../shared/utils/slug.js"
-import { creatorRepository } from "../repositories/creator.repository.js"
+import { AppError } from '../../../shared/errors/app-error.js'
+import { generateUniqueSlug } from '../../../shared/utils/slug.js'
+import { creatorRepository } from '../repositories/creator.repository.js'
 import type {
   CreateCreatorInput,
   CreatorProfile,
   UpdateCreatorInput,
-} from "../types/creator.types.js"
+} from '../types/creator.types.js'
 
 export interface ListCreatorsResult {
   data: CreatorProfile[]
@@ -44,13 +44,15 @@ export const creatorService = {
     return { data, total }
   },
 
-  async createCreatorProfile(input: CreateCreatorInput): Promise<CreatorProfile> {
+  async createCreatorProfile(
+    input: CreateCreatorInput
+  ): Promise<CreatorProfile> {
     const existing = await creatorRepository.findByUserId(input.userId)
     if (existing) {
       throw new AppError(
         409,
-        "CREATOR_PROFILE_EXISTS",
-        "A creator profile already exists for this account"
+        'CREATOR_PROFILE_EXISTS',
+        'A creator profile already exists for this account'
       )
     }
 
@@ -69,14 +71,14 @@ export const creatorService = {
   ): Promise<CreatorProfile> {
     const profile = await creatorRepository.findById(id)
     if (!profile) {
-      throw new AppError(404, "CREATOR_NOT_FOUND", "Creator profile not found")
+      throw new AppError(404, 'CREATOR_NOT_FOUND', 'Creator profile not found')
     }
 
     if (profile.userId !== requestingUserId) {
       throw new AppError(
         403,
-        "FORBIDDEN",
-        "You do not have permission to edit this profile"
+        'FORBIDDEN',
+        'You do not have permission to edit this profile'
       )
     }
 

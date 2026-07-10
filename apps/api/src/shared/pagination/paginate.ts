@@ -1,6 +1,6 @@
-import { type Prisma } from "@prisma/client"
-import { prisma } from "../database/prisma.js"
-import type { Pagination, PaginationMeta } from "./pagination.types.js"
+import { type Prisma } from '@prisma/client'
+import { prisma } from '../database/prisma.js'
+import type { Pagination, PaginationMeta } from './pagination.types.js'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_PAGE_SIZE = 20
@@ -53,7 +53,9 @@ export async function paginateCreators<T = unknown>(
   const [data, total] = await Promise.all([
     prisma.creatorProfile.findMany({
       ...(args.where ? { where: args.where } : {}),
-      ...(args.orderBy ? { orderBy: args.orderBy } : { orderBy: { createdAt: "desc" as const } }),
+      ...(args.orderBy
+        ? { orderBy: args.orderBy }
+        : { orderBy: { createdAt: 'desc' as const } }),
       ...(args.select ? { select: args.select } : {}),
       ...(args.include ? { include: args.include } : {}),
       skip,
@@ -71,5 +73,8 @@ export function paginationFromRequest(input: Pagination): {
   page: number
   pageSize: number
 } {
-  return { page: clampPage(input.page), pageSize: clampPageSize(input.pageSize) }
+  return {
+    page: clampPage(input.page),
+    pageSize: clampPageSize(input.pageSize),
+  }
 }

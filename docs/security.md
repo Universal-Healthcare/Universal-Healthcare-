@@ -12,7 +12,7 @@ This document covers the UHDN codebase: the Express **API**, the Next.js **web**
 
 Out of scope:
 
-- Vulnerabilities in third-party deps — please disclose upstream (npm/GitHub advisory), and *also* drop us a note so we can patch.
+- Vulnerabilities in third-party deps — please disclose upstream (npm/GitHub advisory), and _also_ drop us a note so we can patch.
 - Enterprise SSO / Okta / AzureAD providers — we don't ship them yet.
 - Users' local device security — that's the mobile OS's problem, not ours.
 - Physical or personnel security at deployment hosts.
@@ -23,15 +23,15 @@ Out of scope:
 
 ### Adversary classes
 
-| Class                              | Capability                                                                                       | In scope? |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------ | --------- |
-| Opportunistic internet scanner     | Tries common endpoints, default creds, known CVEs                                                 | ✅ yes    |
-| Unauthenticated attacker            | Can hit public endpoints (`/health`, `/api/creators/:slug`, `/api/auth/register`, `/api/auth/login`) | ✅ yes    |
-| Authenticated malicious user       | Has a real JWT; can hit `/api/users/me*, /api/creators/*`, fan endpoints                          | ✅ yes    |
-| Credential-stuffing attacker        | Tries leaked email/password pairs against `/api/auth/login`                                       | ✅ yes    |
-| Network observer (TLS-terminated)  | Can see headers / payload sizes; cannot read bodies if TLS is configured                         | ✅ yes    |
-| Insider with read access to deploy  | Can read env vars, DB rows, S3 objects                                                            | ✅ yes    |
-| Supply-chain attacker               | Compromises a dep or CI step                                                                     | ✅ yes    |
+| Class                              | Capability                                                                                           | In scope? |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------- | --------- |
+| Opportunistic internet scanner     | Tries common endpoints, default creds, known CVEs                                                    | ✅ yes    |
+| Unauthenticated attacker           | Can hit public endpoints (`/health`, `/api/creators/:slug`, `/api/auth/register`, `/api/auth/login`) | ✅ yes    |
+| Authenticated malicious user       | Has a real JWT; can hit `/api/users/me*, /api/creators/*`, fan endpoints                             | ✅ yes    |
+| Credential-stuffing attacker       | Tries leaked email/password pairs against `/api/auth/login`                                          | ✅ yes    |
+| Network observer (TLS-terminated)  | Can see headers / payload sizes; cannot read bodies if TLS is configured                             | ✅ yes    |
+| Insider with read access to deploy | Can read env vars, DB rows, S3 objects                                                               | ✅ yes    |
+| Supply-chain attacker              | Compromises a dep or CI step                                                                         | ✅ yes    |
 
 ### Trust boundaries
 
@@ -40,14 +40,14 @@ Out of scope:
 
 ### Data sensitivity tiers
 
-| Tier                       | Fields                                                                                     | Storage                                         |
-| -------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------- |
-| Secret                     | `passwordHash` (bcrypt), `JWT_SECRET`, AWS keys                                            | env vars + bcrypt-hashed DB column              |
-| Auth material              | JWT bearer token, refresh tokens (future)                                                  | client memory / localStorage (see posture below) |
-| Personally identifiable    | `email`, `displayName`, `bio`, `genre`, `location`                                         | SQLite / Postgres DB row                         |
-| User-generated media       | avatar                                                                                     | S3 bucket                                       |
+| Tier                    | Fields                                             | Storage                                          |
+| ----------------------- | -------------------------------------------------- | ------------------------------------------------ |
+| Secret                  | `passwordHash` (bcrypt), `JWT_SECRET`, AWS keys    | env vars + bcrypt-hashed DB column               |
+| Auth material           | JWT bearer token, refresh tokens (future)          | client memory / localStorage (see posture below) |
+| Personally identifiable | `email`, `displayName`, `bio`, `genre`, `location` | SQLite / Postgres DB row                         |
+| User-generated media    | avatar                                             | S3 bucket                                        |
 
-### What we're *not* promising yet
+### What we're _not_ promising yet
 
 These are concrete follow-ups, not designed-out features:
 
@@ -68,7 +68,7 @@ These are concrete follow-ups, not designed-out features:
 
 Use one of:
 
-1. **GitHub Security Advisories** (preferred) — visit the repository's *Security* tab → *Report a vulnerability* → submit privately. Only the maintainers see it.
+1. **GitHub Security Advisories** (preferred) — visit the repository's _Security_ tab → _Report a vulnerability_ → submit privately. Only the maintainers see it.
 2. **Email** the maintainers at the address in `CODEOWNERS` (or the GitHub org contact email if no `CODEOWNERS` exists yet).
 
 What to include in a good report:
@@ -83,7 +83,7 @@ We commit to:
 
 - **Triage within 72 hours** of a complete report.
 - **Status update every 7 days** until resolution.
-- **Coordinated disclosure** — we'll work with you on a timeline. Default is *fix-first-then-disclose*, capped at 90 days.
+- **Coordinated disclosure** — we'll work with you on a timeline. Default is _fix-first-then-disclose_, capped at 90 days.
 - **Credit** in the public advisory (unless you ask to remain anonymous).
 - **No legal action** against good-faith research that follows this policy.
 
@@ -94,20 +94,20 @@ We commit to:
 ### What we do
 
 - **Passwords** are hashed server-side with **bcrypt** (10 salt rounds). Plaintext never leaves the API.
-- **JWTs** are signed HS256 with `{ sub: userId }` payload only. Expiry comes from `JWT_EXPIRES_IN` (default `1h`). The signing key is `JWT_SECRET`, read from env and *never* logged.
+- **JWTs** are signed HS256 with `{ sub: userId }` payload only. Expiry comes from `JWT_EXPIRES_IN` (default `1h`). The signing key is `JWT_SECRET`, read from env and _never_ logged.
 - **Transport** is `Authorization: Bearer <token>` on every protected route. Tokens are never accepted in URLs, query strings, or cookies (today).
 - **Middleware** is centralised in `src/shared/middleware/auth.middleware.ts`. Missing header → `401 UNAUTHORIZED`. Invalid/expired → same.
-- **Password rules** (from `@universal-healthcare/shared`'s `registerSchema`): ≥ 8 chars, at least one upper, one lower, one digit. Enforced *identically* client and server.
+- **Password rules** (from `@universal-healthcare/shared`'s `registerSchema`): ≥ 8 chars, at least one upper, one lower, one digit. Enforced _identically_ client and server.
 
-### What we *don't* do yet (and the risk)
+### What we _don't_ do yet (and the risk)
 
-| Gap                                                                                | Risk                                                                                | Mitigation today                                                         |
-| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| No JWT revocation list                                                             | A leaked token is valid until `exp` (~1h)                                           | Short expiry; rotate `JWT_SECRET` if you suspect a leak                  |
-| Token stored in `localStorage` on the web                                          | XSS-readable                                                                        | CSP / no innerHTML / no `dangerouslySetInnerHTML` planned in follow-up   |
-| No MFA / WebAuthn                                                                  | Credential stuffing → full account takeover                                         | bcrypt cost is the only rate-limit; IP-based throttle is a follow-up     |
-| Stateless JWT — server can't tell a token was "yesterday's" until exp              | Logout is client-side only                                                          | Reduce `JWT_EXPIRES_IN` in high-risk deployments                         |
-| No password reset flow (yet)                                                       | Forgotten passwords require manual ops intervention                                | n/a — track in roadmap                                                    |
+| Gap                                                                   | Risk                                                | Mitigation today                                                       |
+| --------------------------------------------------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------- |
+| No JWT revocation list                                                | A leaked token is valid until `exp` (~1h)           | Short expiry; rotate `JWT_SECRET` if you suspect a leak                |
+| Token stored in `localStorage` on the web                             | XSS-readable                                        | CSP / no innerHTML / no `dangerouslySetInnerHTML` planned in follow-up |
+| No MFA / WebAuthn                                                     | Credential stuffing → full account takeover         | bcrypt cost is the only rate-limit; IP-based throttle is a follow-up   |
+| Stateless JWT — server can't tell a token was "yesterday's" until exp | Logout is client-side only                          | Reduce `JWT_EXPIRES_IN` in high-risk deployments                       |
+| No password reset flow (yet)                                          | Forgotten passwords require manual ops intervention | n/a — track in roadmap                                                 |
 
 ### Hardening checklist for production deploys
 
@@ -130,14 +130,14 @@ We commit to:
 - **Key prefix strategy** is up to you; we recommend `avatars/<userId>/<uuid>.jpg` so you can lifecycle-rule the prefix.
 - **Local dev** works against `minio` (S3-compatible) — see [Environment](./environment.md#aws-s3-avatar-uploads).
 
-### What we *don't* do yet
+### What we _don't_ do yet
 
-| Gap                                                                  | Risk                                                  | Mitigation today                                                  |
-| -------------------------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------- |
-| No MIME sniffing on the server side (only the upload URL is signed)   | User can `PUT` any content-type; serving layer filters | Browser-side `Content-Type` enforcement; bucket CORS whitelist    |
-| No antivirus / malware scan on upload                                | A user could publish a hostile file                     | Out of scope — add a Lambda@Edge or Hook if you serve user-uploaded media |
-| No bucket versioning                                                | Lost objects on accidental delete                      | Enable versioning on the bucket out-of-band                       |
-| No public-read policy guard-rail                                     | Bucket misconfiguration could leak other prefixes     | Use a dedicated bucket with a least-privilege IAM key             |
+| Gap                                                                 | Risk                                                   | Mitigation today                                                          |
+| ------------------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------- |
+| No MIME sniffing on the server side (only the upload URL is signed) | User can `PUT` any content-type; serving layer filters | Browser-side `Content-Type` enforcement; bucket CORS whitelist            |
+| No antivirus / malware scan on upload                               | A user could publish a hostile file                    | Out of scope — add a Lambda@Edge or Hook if you serve user-uploaded media |
+| No bucket versioning                                                | Lost objects on accidental delete                      | Enable versioning on the bucket out-of-band                               |
+| No public-read policy guard-rail                                    | Bucket misconfiguration could leak other prefixes      | Use a dedicated bucket with a least-privilege IAM key                     |
 
 ### Production checklist
 
@@ -159,18 +159,18 @@ We commit to:
 - **Cascading deletes** are configured at the schema level (e.g. `CreatorProfile` and `FanProfile` delete with their `User`).
 - **PII columns** are exactly: email (with `@@unique`), displayName, bio, genre, location, avatar URL.
 
-### What we *don't* do yet
+### What we _don't_ do yet
 
-| Gap                                                                         | Risk                                                          | Mitigation today                                  |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------- |
-| No backups / point-in-time recovery configured                              | Operator error or host failure loses data                     | Out of scope — schedule via your DB host          |
-| No row-level multi-tenancy                                                   | All users share one logical DB; a single SQL bug = broad leak | Apply least-privilege DB user; audit SQL by hand  |
-| No PII encryption-at-rest beyond provider defaults                          | A leaked DB dump exposes emails, names, bios verbatim         | Consider column-level encryption for `bio`, `location` if your threat model warrants it |
-| No data-subject-access (DSAR) endpoint                                      | GDPR / CCPA deletion requests can't be self-served            | Build an admin-only ERASE endpoint (follow-up)   |
+| Gap                                                | Risk                                                          | Mitigation today                                                                        |
+| -------------------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| No backups / point-in-time recovery configured     | Operator error or host failure loses data                     | Out of scope — schedule via your DB host                                                |
+| No row-level multi-tenancy                         | All users share one logical DB; a single SQL bug = broad leak | Apply least-privilege DB user; audit SQL by hand                                        |
+| No PII encryption-at-rest beyond provider defaults | A leaked DB dump exposes emails, names, bios verbatim         | Consider column-level encryption for `bio`, `location` if your threat model warrants it |
+| No data-subject-access (DSAR) endpoint             | GDPR / CCPA deletion requests can't be self-served            | Build an admin-only ERASE endpoint (follow-up)                                          |
 
 ### Hardening checklist
 
-- [ ] Production DB user has only the privileges required (`SELECT, INSERT, UPDATE, DELETE` — *not* `DROP`, `CREATE`, `ALTER`).
+- [ ] Production DB user has only the privileges required (`SELECT, INSERT, UPDATE, DELETE` — _not_ `DROP`, `CREATE`, `ALTER`).
 - [ ] Connection pooling enabled (set `?connection_limit=` in `DATABASE_URL` for Postgres, or a PgBouncer layer).
 - [ ] Backups: daily snapshot + 7-day retention minimum.
 - [ ] Audit every schema migration in PR review — Prisma files are diff-readable.
@@ -180,14 +180,14 @@ We commit to:
 
 ## Headers, CORS, rate-limiting
 
-| Concern                 | Today                                                 | To do                                                                |
-| ----------------------- | ----------------------------------------------------- | -------------------------------------------------------------------- |
-| CORS                    | **Allowlist** via `CORS_ORIGINS` (env-driven, origin callback rejects unknown origins with 403). Empty list = allow all (dev-only convenience; warn at startup in production) | Audit allowlist for any non-public origins before each release |
-| Security headers        | **Helmet** mounts in `apps/api` with `crossOriginResourcePolicy: cross-origin` so cross-origin XHR/fetch reads aren't blocked. Default headers include HSTS (off in dev), `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, no `X-Powered-By` | Add CSP / Referrer-Policy to the web app's `next.config` (follow-up) |
-| Rate limiting           | **Per-IP fixed-window** via `express-rate-limit` on all `/api/*` (configurable via `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX`; no-op when `NODE_ENV=test`). Standard `RateLimit-*` response headers (draft-7) | Add a stricter per-endpoint policy for `/api/auth/*` (5 req/min/IP) once auth-attack traffic is observable |
-| Request size limit      | **1 MB JSON body cap** on `/api/*` (`express.json({ limit: '1mb' })`) | Same cap for any future multipart endpoints                            |
-| Request ID              | **`X-Request-Id`** trusted if it matches `[A-Za-z0-9._-]{1,128}` (upstream), otherwise generated as a UUID v4. Echoed in the response header and in every structured log line | Propagate the same id to outbound S3 / Stellar calls (correlation)  |
-| Process lifecycle       | **Graceful shutdown** on `SIGTERM` / `SIGINT` — drains in-flight requests (10s), disconnects Prisma, hard-exits after 25s. `uncaughtException` + `unhandledRejection` are logged but do not kill the process silently | n/a                                                                  |
+| Concern            | Today                                                                                                                                                                                                                                                         | To do                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| CORS               | **Allowlist** via `CORS_ORIGINS` (env-driven, origin callback rejects unknown origins with 403). Empty list = allow all (dev-only convenience; warn at startup in production)                                                                                 | Audit allowlist for any non-public origins before each release                                             |
+| Security headers   | **Helmet** mounts in `apps/api` with `crossOriginResourcePolicy: cross-origin` so cross-origin XHR/fetch reads aren't blocked. Default headers include HSTS (off in dev), `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, no `X-Powered-By` | Add CSP / Referrer-Policy to the web app's `next.config` (follow-up)                                       |
+| Rate limiting      | **Per-IP fixed-window** via `express-rate-limit` on all `/api/*` (configurable via `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX`; no-op when `NODE_ENV=test`). Standard `RateLimit-*` response headers (draft-7)                                                  | Add a stricter per-endpoint policy for `/api/auth/*` (5 req/min/IP) once auth-attack traffic is observable |
+| Request size limit | **1 MB JSON body cap** on `/api/*` (`express.json({ limit: '1mb' })`)                                                                                                                                                                                         | Same cap for any future multipart endpoints                                                                |
+| Request ID         | **`X-Request-Id`** trusted if it matches `[A-Za-z0-9._-]{1,128}` (upstream), otherwise generated as a UUID v4. Echoed in the response header and in every structured log line                                                                                 | Propagate the same id to outbound S3 / Stellar calls (correlation)                                         |
+| Process lifecycle  | **Graceful shutdown** on `SIGTERM` / `SIGINT` — drains in-flight requests (10s), disconnects Prisma, hard-exits after 25s. `uncaughtException` + `unhandledRejection` are logged but do not kill the process silently                                         | n/a                                                                                                        |
 
 ---
 
@@ -199,7 +199,7 @@ We commit to:
 - **Renovate / Dependabot** — not configured yet. Track as a follow-up.
 - **npm audit / Snyk** — not wired into CI yet. Track as a follow-up.
 
-If you discover a CVE in a dep we ship, disclose upstream *and* drop us a note so we can patch in the same advisory window.
+If you discover a CVE in a dep we ship, disclose upstream _and_ drop us a note so we can patch in the same advisory window.
 
 ---
 
@@ -223,16 +223,16 @@ If you discover a CVE in a dep we ship, disclose upstream *and* drop us a note s
 
 ## Incident response (summary)
 
-| Step                                                                                | Owner                |
-| ----------------------------------------------------------------------------------- | -------------------- |
-| 1. Receive report via private channel (above)                                       | Maintainers          |
-| 2. Triage within 72h — confirm impact, scope, severity                              | Maintainers          |
-| 3. Coordinate timeline with reporter                                                | Maintainers          |
-| 4. Implement fix on a private branch                                                | Maintainers          |
-| 5. Backport to supported versions                                                   | Maintainers          |
-| 6. Publish GitHub Security Advisory + CVE if appropriate                            | Maintainers          |
-| 7. Public disclosure *after* fix is in `main` and shipped, **or** 90 days, whichever is sooner | Maintainers |
-| 8. Post-mortem (internal, no PII) — what we missed, what we'll change                | Maintainers          |
+| Step                                                                                           | Owner       |
+| ---------------------------------------------------------------------------------------------- | ----------- |
+| 1. Receive report via private channel (above)                                                  | Maintainers |
+| 2. Triage within 72h — confirm impact, scope, severity                                         | Maintainers |
+| 3. Coordinate timeline with reporter                                                           | Maintainers |
+| 4. Implement fix on a private branch                                                           | Maintainers |
+| 5. Backport to supported versions                                                              | Maintainers |
+| 6. Publish GitHub Security Advisory + CVE if appropriate                                       | Maintainers |
+| 7. Public disclosure _after_ fix is in `main` and shipped, **or** 90 days, whichever is sooner | Maintainers |
+| 8. Post-mortem (internal, no PII) — what we missed, what we'll change                          | Maintainers |
 
 ---
 

@@ -1,9 +1,9 @@
-import { createHash, randomBytes, randomUUID } from "node:crypto"
-import jwt, { type SignOptions } from "jsonwebtoken"
-import { env } from "../../../shared/config/env.js"
-import { AppError } from "../../../shared/errors/app-error.js"
-import { logger } from "../../../shared/logger/logger.js"
-import { refreshTokenRepository } from "../repositories/refresh-token.repository.js"
+import { createHash, randomBytes, randomUUID } from 'node:crypto'
+import jwt, { type SignOptions } from 'jsonwebtoken'
+import { env } from '../../../shared/config/env.js'
+import { AppError } from '../../../shared/errors/app-error.js'
+import { logger } from '../../../shared/logger/logger.js'
+import { refreshTokenRepository } from '../repositories/refresh-token.repository.js'
 
 export interface AccessTokenPayload {
   sub: string
@@ -18,16 +18,16 @@ export interface IssuedTokenPair {
 }
 
 export function hashToken(token: string): string {
-  return createHash("sha256").update(token).digest("hex")
+  return createHash('sha256').update(token).digest('hex')
 }
 
 export function generateOpaqueToken(byteLength = 32): string {
-  return randomBytes(byteLength).toString("hex")
+  return randomBytes(byteLength).toString('hex')
 }
 
 function issueAccessToken(userId: string): string {
   const options: SignOptions = {
-    expiresIn: env.JWT_EXPIRES_IN as SignOptions["expiresIn"],
+    expiresIn: env.JWT_EXPIRES_IN as SignOptions['expiresIn'],
   }
   // jti makes the JWT unique per issue, so two tokens issued in the same
   // second still have different signatures.
@@ -40,7 +40,7 @@ function refreshTtlMs(): number {
 
 export const tokenService = {
   generateOpaqueToken(byteLength = 32): string {
-    return randomBytes(byteLength).toString("hex")
+    return randomBytes(byteLength).toString('hex')
   },
 
   hashToken,
@@ -69,11 +69,19 @@ export const tokenService = {
     const existing = await refreshTokenRepository.findByHash(tokenHash)
 
     if (!existing) {
-      throw new AppError(401, "INVALID_REFRESH_TOKEN", "Refresh token not recognised")
+      throw new AppError(
+        401,
+        'INVALID_REFRESH_TOKEN',
+        'Refresh token not recognised'
+      )
     }
 
     if (existing.expiresAt.getTime() < Date.now()) {
-      throw new AppError(401, "REFRESH_TOKEN_EXPIRED", "Refresh token has expired")
+      throw new AppError(
+        401,
+        'REFRESH_TOKEN_EXPIRED',
+        'Refresh token has expired'
+      )
     }
 
     // Theft detection: a previously-revoked token being presented is a signal
@@ -82,14 +90,14 @@ export const tokenService = {
       const revoked = await refreshTokenRepository.revokeAllForUser(
         existing.userId
       )
-      logger.warn("refresh_token_replay_detected", {
+      logger.warn('refresh_token_replay_detected', {
         userId: existing.userId,
         revokedCount: revoked,
       })
       throw new AppError(
         401,
-        "REFRESH_TOKEN_REVOKED",
-        "Refresh token reuse detected; all sessions revoked"
+        'REFRESH_TOKEN_REVOKED',
+        'Refresh token reuse detected; all sessions revoked'
       )
     }
 

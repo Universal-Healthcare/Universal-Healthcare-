@@ -1,28 +1,25 @@
-import bcrypt from "bcryptjs"
-import { prisma } from "../../../shared/database/prisma.js"
-import { AppError } from "../../../shared/errors/app-error.js"
-import { generateUniqueSlug } from "../../../shared/utils/slug.js"
+import bcrypt from 'bcryptjs'
+import { prisma } from '../../../shared/database/prisma.js'
+import { AppError } from '../../../shared/errors/app-error.js'
+import { generateUniqueSlug } from '../../../shared/utils/slug.js'
 import {
   toCreatorResponse,
   type CreatorProfile,
-} from "../../creators/types/creator.types.js"
-import {
-  toFanResponse,
-  type FanProfile,
-} from "../../fans/types/fan.types.js"
-import type { User } from "../../users/types/user.types.js"
-import { userService } from "../../users/services/user.service.js"
+} from '../../creators/types/creator.types.js'
+import { toFanResponse, type FanProfile } from '../../fans/types/fan.types.js'
+import type { User } from '../../users/types/user.types.js'
+import { userService } from '../../users/services/user.service.js'
 import {
   toAuthUserResponse,
   toTokenPair,
   type AuthResult,
-} from "./token-helpers.js"
-import { tokenService, type IssuedTokenPair } from "./token.service.js"
-import { emailVerificationService } from "./email-verification.service.js"
+} from './token-helpers.js'
+import { tokenService, type IssuedTokenPair } from './token.service.js'
+import { emailVerificationService } from './email-verification.service.js'
 import type {
   LoginInput,
   RegisterInput,
-} from "../validators/auth.validators.js"
+} from '../validators/auth.validators.js'
 
 const PASSWORD_SALT_ROUNDS = 10
 
@@ -55,8 +52,8 @@ export const authService = {
     if (existing) {
       throw new AppError(
         409,
-        "EMAIL_ALREADY_REGISTERED",
-        "An account with this email already exists"
+        'EMAIL_ALREADY_REGISTERED',
+        'An account with this email already exists'
       )
     }
 
@@ -68,10 +65,9 @@ export const authService = {
           data: { email: input.email, passwordHash },
         })
 
-        if (input.role === "creator") {
-          const slug = await generateUniqueSlug(
-            input.displayName,
-            (s) => tx.creatorProfile.findUnique({ where: { slug: s } })
+        if (input.role === 'creator') {
+          const slug = await generateUniqueSlug(input.displayName, (s) =>
+            tx.creatorProfile.findUnique({ where: { slug: s } })
           )
           const raw = await tx.creatorProfile.create({
             data: {
@@ -123,12 +119,12 @@ export const authService = {
       void err
     }
 
-    if (role === "creator") {
+    if (role === 'creator') {
       if (!creatorProfile) {
         throw new AppError(
           500,
-          "PROFILE_MISSING",
-          "Creator profile not created during registration"
+          'PROFILE_MISSING',
+          'Creator profile not created during registration'
         )
       }
       return {
@@ -141,8 +137,8 @@ export const authService = {
     if (!fanProfile) {
       throw new AppError(
         500,
-        "PROFILE_MISSING",
-        "Fan profile not created during registration"
+        'PROFILE_MISSING',
+        'Fan profile not created during registration'
       )
     }
     return {
@@ -159,20 +155,31 @@ export const authService = {
     })
 
     if (!user) {
-      throw new AppError(401, "INVALID_CREDENTIALS", "Invalid email or password")
+      throw new AppError(
+        401,
+        'INVALID_CREDENTIALS',
+        'Invalid email or password'
+      )
     }
-    const passwordMatches = await bcrypt.compare(input.password, user.passwordHash)
+    const passwordMatches = await bcrypt.compare(
+      input.password,
+      user.passwordHash
+    )
     if (!passwordMatches) {
-      throw new AppError(401, "INVALID_CREDENTIALS", "Invalid email or password")
+      throw new AppError(
+        401,
+        'INVALID_CREDENTIALS',
+        'Invalid email or password'
+      )
     }
     if (!user.creatorProfile && !user.fanProfile) {
       throw new AppError(
         500,
-        "PROFILE_MISSING",
-        "Account has no role profile; contact support"
+        'PROFILE_MISSING',
+        'Account has no role profile; contact support'
       )
     }
-    const role: "creator" | "fan" = user.creatorProfile ? "creator" : "fan"
+    const role: 'creator' | 'fan' = user.creatorProfile ? 'creator' : 'fan'
     const rawProfile = (user.creatorProfile ?? user.fanProfile)!
     const localUser = user as unknown as User
     const tokens = await tokenService.issueTokenPair(localUser.id)
@@ -181,7 +188,7 @@ export const authService = {
       user: toAuthUserResponse(localUser, role),
       tokens: toTokenPair(tokens),
       profile:
-        role === "creator"
+        role === 'creator'
           ? toCreatorResponse(rawProfile as unknown as CreatorProfile)
           : toFanResponse(convertRawFan(rawProfile)),
     }
@@ -195,16 +202,16 @@ export const authService = {
       include: { creatorProfile: true, fanProfile: true },
     })
     if (!user) {
-      throw new AppError(401, "UNAUTHENTICATED", "Account no longer exists")
+      throw new AppError(401, 'UNAUTHENTICATED', 'Account no longer exists')
     }
     if (!user.creatorProfile && !user.fanProfile) {
       throw new AppError(
         500,
-        "PROFILE_MISSING",
-        "Account has no role profile; contact support"
+        'PROFILE_MISSING',
+        'Account has no role profile; contact support'
       )
     }
-    const role: "creator" | "fan" = user.creatorProfile ? "creator" : "fan"
+    const role: 'creator' | 'fan' = user.creatorProfile ? 'creator' : 'fan'
     const rawProfile = (user.creatorProfile ?? user.fanProfile)!
     const localUser = user as unknown as User
 
@@ -212,7 +219,7 @@ export const authService = {
       user: toAuthUserResponse(localUser, role),
       tokens: toTokenPair(next),
       profile:
-        role === "creator"
+        role === 'creator'
           ? toCreatorResponse(rawProfile as unknown as CreatorProfile)
           : toFanResponse(convertRawFan(rawProfile)),
     }

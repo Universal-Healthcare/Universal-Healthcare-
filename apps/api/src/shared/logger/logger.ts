@@ -1,6 +1,10 @@
-type LogLevel = "info" | "warn" | "error"
+type LogLevel = 'info' | 'warn' | 'error'
 
-function write(level: LogLevel, message: string, meta?: Record<string, unknown>): void {
+function write(
+  level: LogLevel,
+  message: string,
+  meta?: Record<string, unknown>
+): void {
   const entry = {
     level,
     message,
@@ -10,9 +14,9 @@ function write(level: LogLevel, message: string, meta?: Record<string, unknown>)
 
   const line = JSON.stringify(entry)
 
-  if (level === "error") {
+  if (level === 'error') {
     console.error(line)
-  } else if (level === "warn") {
+  } else if (level === 'warn') {
     console.warn(line)
   } else {
     console.log(line)
@@ -20,7 +24,10 @@ function write(level: LogLevel, message: string, meta?: Record<string, unknown>)
 }
 
 export const logger = {
-  info: (message: string, meta?: Record<string, unknown>) => write("info", message, meta),
-  warn: (message: string, meta?: Record<string, unknown>) => write("warn", message, meta),
-  error: (message: string, meta?: Record<string, unknown>) => write("error", message, meta),
+  info: (message: string, meta?: Record<string, unknown>) =>
+    write('info', message, meta),
+  warn: (message: string, meta?: Record<string, unknown>) =>
+    write('warn', message, meta),
+  error: (message: string, meta?: Record<string, unknown>) =>
+    write('error', message, meta),
 }

@@ -1,7 +1,7 @@
-import { randomUUID } from "node:crypto"
-import type { NextFunction, Request, Response } from "express"
+import { randomUUID } from 'node:crypto'
+import type { NextFunction, Request, Response } from 'express'
 
-const HEADER = "x-request-id"
+const HEADER = 'x-request-id'
 const DEFAULT_MAX_LENGTH = 128
 const SAFE = /^[A-Za-z0-9._-]+$/
 

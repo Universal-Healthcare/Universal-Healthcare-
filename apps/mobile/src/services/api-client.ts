@@ -1,11 +1,11 @@
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4000"
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000'
 
 export class ApiError extends Error {
   status: number
 
   constructor(status: number, message: string) {
     super(message)
-    this.name = "ApiError"
+    this.name = 'ApiError'
     this.status = status
   }
 }
@@ -17,7 +17,7 @@ export async function apiFetch<T>(
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       ...options.headers,
     },
   })
@@ -27,14 +27,14 @@ export async function apiFetch<T>(
   if (!response.ok) {
     const message =
       data &&
-      typeof data === "object" &&
-      "error" in data &&
+      typeof data === 'object' &&
+      'error' in data &&
       data.error &&
-      typeof data.error === "object" &&
-      "message" in data.error &&
-      typeof data.error.message === "string"
+      typeof data.error === 'object' &&
+      'message' in data.error &&
+      typeof data.error.message === 'string'
         ? data.error.message
-        : "Something went wrong"
+        : 'Something went wrong'
 
     throw new ApiError(response.status, message)
   }

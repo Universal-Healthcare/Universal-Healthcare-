@@ -23,5 +23,3 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm turbo run lint build --filter=@universal-healthcare/stellar
-
-

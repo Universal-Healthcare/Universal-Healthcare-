@@ -31,7 +31,7 @@ We adopt a **two-mode datasource** strategy with a **portable schema**:
 
 - **Default `provider = "sqlite"`** in `apps/api/prisma/schema.prisma`. Local dev uses `DATABASE_URL=file:./dev.db`.
 - **Tests** use a separate sqlite file configured via `apps/api/.env.test`. The `test` script runs `prisma db push` against that file before Vitest, and the global `beforeEach` in `tests/setup.ts` clears tables between tests.
-- **Production** swaps to Postgres by changing `DATABASE_URL` to a Postgres connection string *and* updating the schema's datasource provider — both during a deploy.
+- **Production** swaps to Postgres by changing `DATABASE_URL` to a Postgres connection string _and_ updating the schema's datasource provider — both during a deploy.
 - The Prisma schema uses **only portable types and clauses** — no `JSONB`, no SQLite-only `INTEGER PRIMARY KEY AUTOINCREMENT` patterns (we use `@default(cuid())`), no ARRAY columns. Whatever Prisma generates for sqlite must generate for Postgres unchanged.
 
 ---
@@ -47,7 +47,7 @@ We adopt a **two-mode datasource** strategy with a **portable schema**:
 
 ### Negative
 
-- **SQLite ≠ Postgres.** Features that work in one may silently fail in the other. We accept this *now* because the schema doesn't use any of them.
+- **SQLite ≠ Postgres.** Features that work in one may silently fail in the other. We accept this _now_ because the schema doesn't use any of them.
 - **Write concurrency is serialised** by SQLite. Tests already mitigate with `fileParallelism: false`. Real production concurrency is a Postgres-only feature — until we cut over, every write in dev goes through the file lock.
 - **One-off Postgres verification is still needed.** Schema changes must be checked against a real Postgres somewhere (CI step, manual docker). A schema that generates on sqlite can still fail on Postgres.
 - **Production cutover is real work.** It requires (a) a production Postgres, (b) `prisma migrate diff` between sqlite and the target PG tables, (c) data backfill if any rows need to move.
@@ -55,7 +55,7 @@ We adopt a **two-mode datasource** strategy with a **portable schema**:
 ### Mitigations
 
 - Schema uses only portable Prisma primitives. We grep sqlite-specific and PG-specific operators as part of the lint posture (planned follow-up).
-- CI must run `prisma migrate diff` against Postgres on every schema PR — *not* against sqlite — to catch drift. Until that's wired, every schema PR needs a reviewer to manually verify on a local PG.
+- CI must run `prisma migrate diff` against Postgres on every schema PR — _not_ against sqlite — to catch drift. Until that's wired, every schema PR needs a reviewer to manually verify on a local PG.
 - The `prisma db push` shortcut stays for dev and tests only. Production migrations are applied with `prisma migrate deploy`.
 
 ---
