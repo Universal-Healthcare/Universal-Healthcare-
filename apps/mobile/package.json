@@ -13,11 +13,13 @@
     "test": "jest"
   },
   "dependencies": {
+    "@universal-healthcare/shared": "workspace:*",
     "expo": "~56.0.12",
     "expo-image-picker": "~56.0.18",
     "expo-status-bar": "~56.0.4",
     "react": "19.2.3",
-    "react-native": "0.85.3"
+    "react-native": "0.85.3",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
