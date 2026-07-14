@@ -7,7 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet.
+Feature milestone: three new modules + cross-service notification
+emission.
+
+### Added
+
+- **Comments module** (full vertical slice across `packages/shared` and
+  `apps/api`). Threaded at one level (parent → `replies[]`); cascade on
+  User, Playlist, and parent self-relation; `@@index([playlistId,
+createdAt])` for the inbox query. `commentService.getById` returns
+  404 (not 403) when the parent playlist is private — same rationale
+  as `playlistService.getPublicById` (don't leak which comments
+  exist). New endpoints: `GET /api/comments/playlists/:playlistId`
+  (public), `POST /api/comments/playlists/:playlistId` (auth),
+  `GET /api/comments/:id` (public), `PATCH /api/comments/:id` (auth,
+  owner), `DELETE /api/comments/:id` (auth, owner, 204).
+- **Follows module** (user-to-user one-way). `@@unique([followerId,
+followeeId])` + `@@index([followeeId])`. Self-follow rejected with
+  400 `CANNOT_FOLLOW_SELF` at the service layer (Zod has no
+  `currentUserId`). Duplicate-follow race caught by Prisma's P2002
+  and mapped to 409 `ALREADY_FOLLOWING` — mirrors `auth.service.ts`
+  `EMAIL_ALREADY_REGISTERED` pattern. New endpoints:
+  `POST /api/follows/me/following/:followeeId`,
+  `DELETE /api/follows/me/following/:followeeId` (204),
+  `GET /api/follows/me/following` + `/me/followers` (auth),
+  `GET /api/follows/users/:userId/following` +
+  `/users/:userId/followers` (public, 404-not-leak on missing
+  target).
+- **Notifications module**. `type` column is `String` +
+  `z.enum(['follow', 'comment_reply'])` — no native Postgres ENUM
+  (per `docs/decisions/0002-sqlite-dev-postgres-prod.md`).
+  `entityType` / `entityId` provide polymorphic linking without a
+  separate join table. Asymmetric delete semantics: `recipient:
+Cascade` (orphaned notifications have no audience) + `actor:
+SetNull` (deleted-actor contributions survive with `actorId:
+null`); the prisma schema comment documents both with a SQLite
+  `PRAGMA foreign_keys = ON` caveat. `markAllRead` uses
+  `prisma.notification.updateMany` (single atomic UPDATE). New
+  endpoints: `GET /api/notifications` (auth, paginated),
+  `PATCH /api/notifications/:id/read` (auth, owner),
+  `POST /api/notifications/read-all` (auth), `DELETE
+/api/notifications/:id` (auth, owner, 204).
+- **Cross-service notification emission**. `followService.create`
+  emits a `'follow'` notification to the followee on success;
+  `commentService.create` emits a `'comment_reply'` notification to
+  the parent comment's author when the reply is from a different
+  user. Both side-effects are sequential, NOT a cross-service
+  `$transaction`, and wrapped in `try { ... } catch (err) { void err }`
+  so a notification failure does NOT roll back the main operation.
+  Mirrors the `auth.service.register` →
+  `emailVerificationService.issueAndSend` pattern.
+
+### Changed
+
+- **`apps/api/tests/setup.ts`** — added `prisma.comment.deleteMany()`,
+  `prisma.follow.deleteMany()`, and `prisma.notification.deleteMany()`
+  to the top of `beforeEach` so the new tables are wiped before any
+  token or profile deletes. SQLite FK race safety even with
+  `onDelete: Cascade`.
 
 ## [0.2.0] - 2026-07-08
 
