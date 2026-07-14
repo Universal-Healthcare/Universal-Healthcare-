@@ -116,6 +116,20 @@ error, refresh }`, and a sibling actions hook
   to the top of `beforeEach` so the new tables are wiped before any
   token or profile deletes. SQLite FK race safety even with
   `onDelete: Cascade`.
+- **`apps/api/src/shared/pagination/format.ts`** (new) + a refactor
+  of `commentController` / `followController` / `notificationController`
+  — extracted the triplicated paginated response envelope
+  construction into a shared `envelope(page, pageSize, total)` helper
+  that returns `PaginationMeta & { hasNext, hasPrev }`. The comment
+  controller's inline `totalPages` + `hasNext` + `hasPrev` block, plus
+  the local `envelope()` helpers in the follow + notification
+  controllers, all now call the shared helper. 3 controllers → 1
+  source of truth; ~20 lines of duplication removed; response shape
+  is unchanged (behavior-preserving refactor). The older
+  `paginate.ts` `metaFromTotal()` (used by `paginateCreators()`) is
+  intentionally **NOT** replaced — its 4-field return shape is the
+  right call for the creators list response, and reusing `envelope()`
+  there would be an unrelated behavior change.
 
 ## [0.2.0] - 2026-07-08
 
