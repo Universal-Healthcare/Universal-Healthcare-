@@ -59,6 +59,57 @@ describe('followService', () => {
     })
   })
 
+  // ─── Side-effect: emit 'follow' notification ──────────────────────────────
+  describe('cross-service notification emission', () => {
+    it('emits a follow notification to the followee after a successful follow', async () => {
+      const follower = await makeUser()
+      const followee = await makeUser()
+      await followService.create(followee.id, follower.id)
+
+      const notifications = await prisma.notification.findMany({
+        where: { recipientId: followee.id, type: 'follow' },
+      })
+      expect(notifications).toHaveLength(1)
+      expect(notifications[0].actorId).toBe(follower.id)
+      expect(notifications[0].entityType).toBe('follow')
+      // entityId is the follow row id — opaque but non-empty
+      expect(notifications[0].entityId.length).toBeGreaterThan(0)
+    })
+
+    it('does NOT emit a notification on self-follow (rejected before emit)', async () => {
+      const a = await makeUser()
+      await expect(followService.create(a.id, a.id)).rejects.toMatchObject({
+        statusCode: 400,
+      })
+      const count = await prisma.notification.count({
+        where: { type: 'follow' },
+      })
+      expect(count).toBe(0)
+    })
+
+    it('does NOT emit a notification when target user does not exist', async () => {
+      const a = await makeUser()
+      await expect(
+        followService.create('does-not-exist', a.id)
+      ).rejects.toMatchObject({ statusCode: 404 })
+      const count = await prisma.notification.count()
+      expect(count).toBe(0)
+    })
+
+    it('does NOT emit when the P2002 race fires (already following)', async () => {
+      const a = await makeUser()
+      const b = await makeUser()
+      await followService.create(b.id, a.id) // emits 1 notification
+      await expect(followService.create(b.id, a.id)).rejects.toMatchObject({
+        statusCode: 409,
+      })
+      const count = await prisma.notification.count({
+        where: { type: 'follow', recipientId: b.id },
+      })
+      expect(count).toBe(1)
+    })
+  })
+
   // ─── delete ──────────────────────────────────────────────────────────────
   describe('delete', () => {
     it('unfollows an existing pair (row gone)', async () => {
