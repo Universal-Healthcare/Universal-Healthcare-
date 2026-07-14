@@ -20,6 +20,58 @@ model User {
   refreshTokens         RefreshToken[]
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens   PasswordResetToken[]
+  playlists             Playlist[]
+  comments              Comment[]
+}
+
+model Playlist {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  isPublic  Boolean   @default(false)
+  tracks    Track[]
+  comments  Comment[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Track {
+  id         String   @id @default(cuid())
+  playlistId String
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  title      String
+  artist     String
+  duration   Int
+  position   Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([playlistId])
+}
+
+// Comments: threaded at one level (parent -> replies[]). Cascade-deletes
+// are intentional across User and Playlist boundaries — orphan rows would
+// serve no purpose.
+model Comment {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  playlistId String
+  playlist   Playlist  @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  parentId   String?
+  parent     Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    Comment[] @relation("CommentReplies")
+  body       String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  // Postgres + SQLite: composite index supports "WHERE playlistId = ? ORDER BY
+  // createdAt" with a reverse scan (ascending index also serves DESC ORDER BY).
+  @@index([playlistId, createdAt])
+  @@index([parentId])
 }
 
 model CreatorProfile {
