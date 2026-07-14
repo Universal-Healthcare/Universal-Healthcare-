@@ -22,6 +22,28 @@ model User {
   passwordResetTokens   PasswordResetToken[]
   playlists             Playlist[]
   comments              Comment[]
+  followedBy            Follow[]   @relation("FollowFollower")
+  following             Follow[]   @relation("FollowFollowee")
+}
+
+// Follows: a user-to-user one-way relationship. Each row represents
+// `follower.following(followee)`. @@unique enforces that any (follower, followee)
+// pair can only exist once — creating a duplicate returns Prisma's P2002, which
+// the service maps to a 409 ALREADY_FOLLOWING.
+model Follow {
+  id         String   @id @default(cuid())
+  followerId String
+  followeeId String
+  follower   User     @relation("FollowFollower", fields: [followerId], references: [id], onDelete: Cascade)
+  followee   User     @relation("FollowFollowee", fields: [followeeId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Composite unique: a user can only follow another user once.
+  // Prisma generates the index name `followerId_followeeId` from this.
+  @@unique([followerId, followeeId])
+  // Reverse-lookup index: who is following this user?
+  @@index([followeeId])
 }
 
 model Playlist {
