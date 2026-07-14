@@ -57,6 +57,26 @@ null`); the prisma schema comment documents both with a SQLite
   so a notification failure does NOT roll back the main operation.
   Mirrors the `auth.service.register` →
   `emailVerificationService.issueAndSend` pattern.
+- **Web + mobile clients for Comments, Follows, Notifications**. New
+  files: `apps/web/lib/comment-client.ts`,
+  `apps/web/lib/follow-client.ts`,
+  `apps/web/lib/notification-client.ts` — function-per-endpoint
+  wrappers mirroring `apps/web/lib/user-client.ts` (token-first
+  signature, `apiFetch` + `authHeaders` from `./api-client`).
+  Public reads (comments, follows) accept a nullable token so
+  anonymous browsing Just Works; auth-gated reads and all writes
+  require `token: string`. Mobile side:
+  `apps/mobile/src/hooks/useComments.ts`,
+  `apps/mobile/src/hooks/useFollows.ts`,
+  `apps/mobile/src/hooks/useNotifications.ts` — each module exports
+  a read hook (`useXxx()` / `useXxxForPlaylist(playlistId)` /
+  `useXxx(userId, scope)`) returning `{ data, pagination, loading,
+error, refresh }`, and a sibling actions hook
+  (`useXxxActions()`) returning the auth-required mutations.
+  Hooks read the token from `useAuth()` and surface `ApiError`
+  messages to the `error` state; callers are expected to invoke
+  `refresh()` after mutations (no internal cross-hook state
+  coupling — keeps the data layer orthogonal).
 
 ### Changed
 
