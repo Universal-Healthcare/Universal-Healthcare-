@@ -74,4 +74,50 @@ export const creatorRepository = {
       data: input,
     })
   },
+
+  // ───────────────────────────────────────────────────────────────────
+  //  Search — backing store for the cross-entity Search module.
+  //  Called by `searchService.search`; the service does the scoring and
+  //  cross-entity stitching. The `tokens` array is AND-ed: every token
+  //  must match at least one of the three searchable fields.
+  //
+  //  Case sensitivity: `contains` is case-sensitive on both SQLite and
+  //  Postgres for the String column type, matching the existing pattern
+  //  in `listMany` above. Prisma's `mode: 'insensitive'` is only
+  //  supported on Postgres / MongoDB (not SQLite, per Prisma's case-
+  //  sensitivity docs), and we don't want a runtime DB-provider branch
+  //  in the repository. Case-insensitive search is a future v2 feature
+  //  (would require raw SQL with `LOWER(col) LIKE LOWER(?)` or a Prisma
+  //  version upgrade that adds SQLite support for `mode`).
+  // ───────────────────────────────────────────────────────────────────
+
+  search(tokens: string[], take: number): Promise<CreatorProfile[]> {
+    return prisma.creatorProfile.findMany({
+      where: {
+        AND: tokens.map((token) => ({
+          OR: [
+            { displayName: { contains: token } },
+            { slug: { contains: token } },
+            { bio: { contains: token } },
+          ],
+        })),
+      },
+      orderBy: { createdAt: 'desc' },
+      take,
+    })
+  },
+
+  countSearch(tokens: string[]): Promise<number> {
+    return prisma.creatorProfile.count({
+      where: {
+        AND: tokens.map((token) => ({
+          OR: [
+            { displayName: { contains: token } },
+            { slug: { contains: token } },
+            { bio: { contains: token } },
+          ],
+        })),
+      },
+    })
+  },
 }
