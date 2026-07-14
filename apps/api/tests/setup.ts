@@ -7,6 +7,7 @@ beforeEach(async () => {
   // SQLite FK safety (the cascade only fires inside a transaction that holds
   // the FK lock — without it, the next test can hit UNIQUE or FK errors).
   await prisma.comment.deleteMany()
+  await prisma.follow.deleteMany()
   await prisma.passwordResetToken.deleteMany()
   await prisma.emailVerificationToken.deleteMany()
   await prisma.refreshToken.deleteMany()
