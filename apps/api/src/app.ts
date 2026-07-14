@@ -9,6 +9,7 @@ import { fansRouter } from './modules/fans/routes/fan.routes.js'
 import { followRouter } from './modules/follows/routes/follow.routes.js'
 import { notificationRouter } from './modules/notifications/routes/notification.routes.js'
 import { playlistsRouter } from './modules/playlists/routes/playlist.routes.js'
+import { searchRouter } from './modules/search/index.js'
 import { usersRouter } from './modules/users/routes/user.routes.js'
 import { env } from './shared/config/env.js'
 import { prisma } from './shared/database/prisma.js'
@@ -108,6 +109,7 @@ export function createApp(): Express {
   app.use('/api/fans', fansRouter)
   app.use('/api/notifications', notificationRouter)
   app.use('/api/playlists', playlistsRouter)
+  app.use('/api/search', searchRouter)
   app.use('/api/users', usersRouter)
 
   // 7. Error handler must be last.
