@@ -8,6 +8,7 @@ beforeEach(async () => {
   // the FK lock — without it, the next test can hit UNIQUE or FK errors).
   await prisma.comment.deleteMany()
   await prisma.follow.deleteMany()
+  await prisma.notification.deleteMany()
   await prisma.passwordResetToken.deleteMany()
   await prisma.emailVerificationToken.deleteMany()
   await prisma.refreshToken.deleteMany()
