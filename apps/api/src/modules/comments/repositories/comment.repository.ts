@@ -66,4 +66,41 @@ export const commentRepository = {
   async delete(id: string): Promise<void> {
     await prisma.comment.delete({ where: { id } })
   },
+
+  // ───────────────────────────────────────────────────────────────────
+  //  Search (public-playlist comments only) — backing store for the
+  //  Search module. Privacy gate: only comments whose parent playlist is
+  //  `isPublic: true` are returned, enforced via a Prisma relation filter
+  //  on `playlist: { isPublic: true }`. This is the same rationale as
+  //  `commentService.getById`: a direct id lookup must not surface the
+  //  body of a comment whose parent has been flipped to private.
+  // ───────────────────────────────────────────────────────────────────
+
+  async searchPublic(
+    tokens: string[],
+    take: number
+  ): Promise<Comment[]> {
+    const rows = await prisma.comment.findMany({
+      where: {
+        playlist: { isPublic: true },
+        AND: tokens.map((token) => ({
+          body: { contains: token },
+        })),
+      },
+      orderBy: { createdAt: 'desc' },
+      take,
+    })
+    return rows.map(commentFromPrisma)
+  },
+
+  countPublicSearch(tokens: string[]): Promise<number> {
+    return prisma.comment.count({
+      where: {
+        playlist: { isPublic: true },
+        AND: tokens.map((token) => ({
+          body: { contains: token },
+        })),
+      },
+    })
+  },
 }
