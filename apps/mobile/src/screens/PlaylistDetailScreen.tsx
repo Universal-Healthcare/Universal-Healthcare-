@@ -89,13 +89,20 @@ export default function PlaylistDetailScreen({ playlistId, onBack }: Props) {
   const [refreshError, setRefreshError] = useState<string | null>(null)
   const hasLoadedOnce = useRef(false)
 
+  // Metadata editing state
+  const [editingMeta, setEditingMeta] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editIsPublic, setEditIsPublic] = useState(false)
+  const [savingMeta, setSavingMeta] = useState(false)
+  const [metaError, setMetaError] = useState<string | null>(null)
+
   // Track editing state
   const [editingTracks, setEditingTracks] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [newArtist, setNewArtist] = useState('')
   const [newDuration, setNewDuration] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [savingTracks, setSavingTracks] = useState(false)
   const [trackError, setTrackError] = useState<string | null>(null)
   const [removingId, setRemovingId] = useState<string | null>(null)
 
@@ -150,13 +157,45 @@ export default function PlaylistDetailScreen({ playlistId, onBack }: Props) {
     fetchPlaylist(false)
   }, [fetchPlaylist])
 
+  // ── Metadata editing handlers ───────────────────────────────────────
+
+  const startEditingMeta = useCallback(() => {
+    if (state.status !== 'ok') return
+    setEditTitle(state.playlist.title)
+    setEditIsPublic(state.playlist.isPublic)
+    setMetaError(null)
+    setEditingTracks(false)
+    setShowAddForm(false)
+    setEditingMeta(true)
+  }, [state])
+
+  const handleSaveMeta = useCallback(async () => {
+    if (!editTitle.trim()) return
+    setSavingMeta(true)
+    setMetaError(null)
+    try {
+      const updated = await actions.update(playlistId, {
+        title: editTitle.trim(),
+        isPublic: editIsPublic,
+      })
+      setState({ status: 'ok', playlist: updated })
+      setEditingMeta(false)
+    } catch (err) {
+      setMetaError(
+        err instanceof Error ? err.message : 'Failed to save changes'
+      )
+    } finally {
+      setSavingMeta(false)
+    }
+  }, [playlistId, actions, editTitle, editIsPublic])
+
   // ── Track editing handlers ───────────────────────────────────────────
 
   const handleAddTrack = useCallback(async () => {
     if (state.status !== 'ok') return
     const duration = parseInt(newDuration, 10)
     if (!newTitle.trim() || !newArtist.trim() || !duration) return
-    setSaving(true)
+    setSavingTracks(true)
     setTrackError(null)
     try {
       const newTrack = {
@@ -184,7 +223,7 @@ export default function PlaylistDetailScreen({ playlistId, onBack }: Props) {
         err instanceof Error ? err.message : 'Failed to add track'
       )
     } finally {
-      setSaving(false)
+      setSavingTracks(false)
     }
   }, [state, playlistId, actions, newTitle, newArtist, newDuration])
 
@@ -216,6 +255,8 @@ export default function PlaylistDetailScreen({ playlistId, onBack }: Props) {
 
   const startEditingTracks = useCallback(() => {
     setTrackError(null)
+    setEditingMeta(false)
+    setShowAddForm(false)
     setEditingTracks(true)
   }, [])
 
@@ -252,16 +293,91 @@ export default function PlaylistDetailScreen({ playlistId, onBack }: Props) {
       <BackButton onPress={onBack} />
 
       {/* ── Inline error banner ────────────────────────────────────────── */}
-      {(refreshError || trackError) && (
+      {(refreshError || trackError || metaError) && (
         <View style={styles.errorBanner}>
           <Text style={styles.errorBannerText}>
-            {refreshError || trackError}
+            {refreshError || trackError || metaError}
           </Text>
         </View>
       )}
 
+      {/* ── Metadata edit form ─────────────────────────────────────────── */}
+      {playlist && editingMeta && (
+        <View style={styles.editForm}>
+          <Text style={styles.editFormLabel}>Title</Text>
+          <TextInput
+            style={styles.input}
+            value={editTitle}
+            onChangeText={setEditTitle}
+            placeholder="Playlist title"
+            placeholderTextColor="#9ca3af"
+            maxLength={200}
+          />
+
+          <Pressable
+            onPress={() => setEditIsPublic((v) => !v)}
+            style={styles.checkboxRow}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: editIsPublic }}
+            accessibilityLabel="Make this playlist public"
+          >
+            <View
+              style={[
+                styles.checkbox,
+                editIsPublic && styles.checkboxChecked,
+              ]}
+            >
+              {editIsPublic && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.checkboxLabel}>Make this playlist public</Text>
+          </Pressable>
+
+          {metaError && (
+            <Text style={styles.formError}>{metaError}</Text>
+          )}
+
+          <View style={styles.editFormButtons}>
+            <Pressable
+              onPress={handleSaveMeta}
+              disabled={savingMeta || !editTitle.trim()}
+              style={({ pressed }) => [
+                styles.saveButton,
+                (savingMeta || !editTitle.trim()) &&
+                  styles.saveButtonDisabled,
+                pressed &&
+                  !savingMeta &&
+                  editTitle.trim() &&
+                  styles.saveButtonPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Save changes"
+            >
+              <Text style={styles.saveButtonText}>
+                {savingMeta ? 'Saving…' : 'Save'}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setEditingMeta(false)
+                setMetaError(null)
+              }}
+              disabled={savingMeta}
+              style={({ pressed }) => [
+                styles.cancelButton,
+                savingMeta && styles.cancelButtonDisabled,
+                pressed && !savingMeta && styles.cancelButtonPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Cancel editing"
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
       {/* ── Header ────────────────────────────────────────────────────── */}
-      {playlist && (
+      {playlist && !editingMeta && (
         <View style={styles.detailHeader}>
           <View style={styles.titleRow}>
             <Text style={styles.heading} numberOfLines={1}>
@@ -294,17 +410,30 @@ export default function PlaylistDetailScreen({ playlistId, onBack }: Props) {
               {new Date(playlist.createdAt).toLocaleDateString()}
             </Text>
             {token && !editingTracks && (
-              <Pressable
-                onPress={startEditingTracks}
-                style={({ pressed }) => [
-                  styles.editTracksButton,
-                  pressed && styles.editTracksButtonPressed,
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel="Edit tracks"
-              >
-                <Text style={styles.editTracksButtonText}>Edit Tracks</Text>
-              </Pressable>
+              <View style={styles.actionButtons}>
+                <Pressable
+                  onPress={startEditingMeta}
+                  style={({ pressed }) => [
+                    styles.editMetaButton,
+                    pressed && styles.editMetaButtonPressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit playlist"
+                >
+                  <Text style={styles.editMetaButtonText}>Edit</Text>
+                </Pressable>
+                <Pressable
+                  onPress={startEditingTracks}
+                  style={({ pressed }) => [
+                    styles.editTracksButton,
+                    pressed && styles.editTracksButtonPressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit tracks"
+                >
+                  <Text style={styles.editTracksButtonText}>Edit Tracks</Text>
+                </Pressable>
+              </View>
             )}
           </View>
 
@@ -384,31 +513,31 @@ export default function PlaylistDetailScreen({ playlistId, onBack }: Props) {
           <Pressable
             onPress={handleAddTrack}
             disabled={
-              saving ||
+              savingTracks ||
               removingId !== null ||
               !newTitle.trim() ||
               !newArtist.trim() ||
               !newDuration.trim()
             }
             style={({ pressed }) => [
-              styles.submitButton,
-              (saving ||
-                !newTitle.trim() ||
-                !newArtist.trim() ||
-                !newDuration.trim()) &&
-                styles.submitButtonDisabled,
-              pressed &&
-                !saving &&
-                newTitle.trim() &&
-                newArtist.trim() &&
-                newDuration.trim() &&
-                styles.submitButtonPressed,
-            ]}
+                styles.submitButton,
+                (savingTracks ||
+                  !newTitle.trim() ||
+                  !newArtist.trim() ||
+                  !newDuration.trim()) &&
+                  styles.submitButtonDisabled,
+                pressed &&
+                  !savingTracks &&
+                  newTitle.trim() &&
+                  newArtist.trim() &&
+                  newDuration.trim() &&
+                  styles.submitButtonPressed,
+              ]}
             accessibilityRole="button"
             accessibilityLabel="Save track"
           >
           <Text style={styles.submitButtonText}>
-            {saving ? 'Adding…' : 'Add Track'}
+            {savingTracks ? 'Adding…' : 'Add Track'}
           </Text>
           </Pressable>
         </View>
@@ -433,7 +562,7 @@ export default function PlaylistDetailScreen({ playlistId, onBack }: Props) {
               onRemove={handleRemoveTrack}
               editing={editingTracks}
               removing={removingId === item.id}
-              anyRemoving={removingId !== null || saving}
+              anyRemoving={removingId !== null || savingTracks}
             />
           )}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -550,6 +679,118 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6b7280',
   },
+
+  // Action buttons
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+
+  // Edit metadata
+  editMetaButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  editMetaButtonPressed: {
+    borderColor: '#2563eb',
+  },
+  editMetaButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+
+  // Edit form
+  editForm: {
+    marginHorizontal: 20,
+    marginVertical: 12,
+    padding: 16,
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    gap: 10,
+  },
+  editFormLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#1a7f37',
+    borderColor: '#1a7f37',
+  },
+  checkmark: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  checkboxLabel: {
+    fontSize: 13,
+    color: '#374151',
+  },
+  editFormButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  saveButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: '#1a7f37',
+    alignItems: 'center',
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#d1d5db',
+    opacity: 0.6,
+  },
+  saveButtonPressed: {
+    backgroundColor: '#157a31',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  cancelButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+  },
+  cancelButtonDisabled: {
+    opacity: 0.5,
+  },
+  cancelButtonPressed: {
+    backgroundColor: '#f3f4f6',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+
 
   // Edit tracks
   editTracksButton: {
