@@ -7,129 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Feature milestone: three new modules + cross-service notification
-emission.
+Feature milestone: playlist module + full web/mobile surfaces + CI fixes.
 
 ### Added
 
-- **Comments module** (full vertical slice across `packages/shared` and
-  `apps/api`). Threaded at one level (parent → `replies[]`); cascade on
-  User, Playlist, and parent self-relation; `@@index([playlistId,
-createdAt])` for the inbox query. `commentService.getById` returns
-  404 (not 403) when the parent playlist is private — same rationale
-  as `playlistService.getPublicById` (don't leak which comments
-  exist). New endpoints: `GET /api/comments/playlists/:playlistId`
-  (public), `POST /api/comments/playlists/:playlistId` (auth),
-  `GET /api/comments/:id` (public), `PATCH /api/comments/:id` (auth,
-  owner), `DELETE /api/comments/:id` (auth, owner, 204).
-- **Follows module** (user-to-user one-way). `@@unique([followerId,
-followeeId])` + `@@index([followeeId])`. Self-follow rejected with
-  400 `CANNOT_FOLLOW_SELF` at the service layer (Zod has no
-  `currentUserId`). Duplicate-follow race caught by Prisma's P2002
-  and mapped to 409 `ALREADY_FOLLOWING` — mirrors `auth.service.ts`
-  `EMAIL_ALREADY_REGISTERED` pattern. New endpoints:
-  `POST /api/follows/me/following/:followeeId`,
-  `DELETE /api/follows/me/following/:followeeId` (204),
-  `GET /api/follows/me/following` + `/me/followers` (auth),
-  `GET /api/follows/users/:userId/following` +
-  `/users/:userId/followers` (public, 404-not-leak on missing
-  target).
-- **Notifications module**. `type` column is `String` +
-  `z.enum(['follow', 'comment_reply'])` — no native Postgres ENUM
-  (per `docs/decisions/0002-sqlite-dev-postgres-prod.md`).
-  `entityType` / `entityId` provide polymorphic linking without a
-  separate join table. Asymmetric delete semantics: `recipient:
-Cascade` (orphaned notifications have no audience) + `actor:
-SetNull` (deleted-actor contributions survive with `actorId:
-null`); the prisma schema comment documents both with a SQLite
-  `PRAGMA foreign_keys = ON` caveat. `markAllRead` uses
-  `prisma.notification.updateMany` (single atomic UPDATE). New
-  endpoints: `GET /api/notifications` (auth, paginated),
-  `PATCH /api/notifications/:id/read` (auth, owner),
-  `POST /api/notifications/read-all` (auth), `DELETE
-/api/notifications/:id` (auth, owner, 204).
-- **Cross-service notification emission**. `followService.create`
-  emits a `'follow'` notification to the followee on success;
-  `commentService.create` emits a `'comment_reply'` notification to
-  the parent comment's author when the reply is from a different
-  user. Both side-effects are sequential, NOT a cross-service
-  `$transaction`, and wrapped in `try { ... } catch (err) { void err }`
-  so a notification failure does NOT roll back the main operation.
-  Mirrors the `auth.service.register` →
-  `emailVerificationService.issueAndSend` pattern.- **Web + mobile clients for Comments, Follows, Notifications**. New
-  files: `apps/web/lib/comment-client.ts`,
-  `apps/web/lib/follow-client.ts`,
-  `apps/web/lib/notification-client.ts` — function-per-endpoint
-  wrappers mirroring `apps/web/lib/user-client.ts` (token-first
-  signature, `apiFetch` + `authHeaders` from `./api-client`).
-  Public reads (comments, follows) accept a nullable token so
-  anonymous browsing Just Works; auth-gated reads and all writes
-  require `token: string`. Mobile side:
-  `apps/mobile/src/hooks/useComments.ts`,
-  `apps/mobile/src/hooks/useFollows.ts`,
-  `apps/mobile/src/hooks/useNotifications.ts` — each module exports
-  a read hook (`useXxx()` / `useXxxForPlaylist(playlistId)` /
-  `useXxx(userId, scope)`) returning `{ data, pagination, loading,
-error, refresh }`, and a sibling actions hook
-  (`useXxxActions()`) returning the auth-required mutations.
-  Hooks read the token from `useAuth()` and surface `ApiError`
-  messages to the `error` state; callers are expected to invoke
-  `refresh()` after mutations (no internal cross-hook state
-  coupling — keeps the data layer orthogonal).
-- **Search module** (cross-entity full-text across creators +
-  public playlists + comments on public playlists). Public
-  endpoint `GET /api/search?q=…&page=&pageSize=&types=creator,playlist,comment&limit=`
-  — no `requireAuth` gate; privacy is enforced in the repository
-  layer via `isPublic: true` (playlists) and
-  `playlist: { isPublic: true }` (comments). Query parsing: split
-  on whitespace, AND each token against the entity's searchable
-  fields with Prisma's `contains: token`. Case sensitivity
-  follows the underlying DB: **case-INsensitive on SQLite**
-  (LIKE is case-insensitive for ASCII by default) and
-  **case-sensitive on Postgres** (LIKE without `mode: 'insensitive'`).
-  Prisma's `mode: 'insensitive'` is unsupported on SQLite in the
-  current project Prisma version, so we accept this cross-DB
-  inconsistency as a v1 limitation; v2 will normalize via raw
-  SQL `LOWER(col) LIKE LOWER(?)` or a Prisma version upgrade.
-  Scoring is JS-side and deterministic: `+10` exact match on
-  `displayName`/`title`/`body`, `+5` prefix, `+1` substring,
-  plus `+1` per token for `bio` matches (creators). Hits are
-  sorted by `score desc, createdAt desc`, then sliced to the
-  requested page. Response is a flat
-  `{ data: SearchHitResponse[], pagination }` envelope where each
-  hit carries a `type: 'creator' | 'playlist' | 'comment'`
-  discriminator (discriminated union in shared types) so web /
-  mobile clients can `switch (hit.type)` with strict typing. New
-  files: `packages/shared/src/types/search.ts`,
-  `packages/shared/src/validation/search.ts`,
-  `apps/api/src/modules/search/{services,controllers,routes,types,tests,index}.ts`,
-  `apps/web/lib/search-client.ts`,
-  `apps/mobile/src/hooks/useSearch.ts`. Repository additions:
-  `creatorRepository.search` + `countSearch`,
-  `playlistRepository.searchPublic` + `countPublicSearch`,
-  `commentRepository.searchPublic` + `countPublicSearch`.
+- **Playlists module** (full vertical slice across `packages/shared` and
+  `apps/api`). Playlist + Track models (already in schema), full
+  repository with DB-level pagination on `listByUserId` (skip/take +
+  `Promise.all` for count) and an atomic `update` method that wraps
+  metadata+tracks changes in `prisma.$transaction` so a playlist is
+  never half-updated. New endpoints: `GET /api/playlists/public/:id`
+  (public), `GET /api/playlists` (auth, paginated),
+  `GET /api/playlists/:id` (auth, owner can view private),
+  `POST /api/playlists` (auth), `PUT /api/playlists/:id` (auth, owner,
+  atomic tracks+metadata), `DELETE /api/playlists/:id` (auth, owner, 204).
+  20 service + route tests covering create, public/private access,
+  pagination, update (tracks + metadata), non-owner 403, and 404.
+- **Web playlist surface**. New files: `apps/web/lib/playlist-client.ts`
+  (public + auth endpoints, `apiFetch` wrapper matching existing client
+  pattern), `apps/web/app/playlists/page.tsx` (auth-gated list with
+  inline create form, per-card delete with error feedback, press-feedback
+  hover states, and navigation links from each card to its detail page),
+  `apps/web/app/playlists/[id]/page.tsx` (detail page with track table,
+  public/private badge, auth-aware fetch trying owner endpoint first then
+  public fallback, and an inline edit form for title/visibility).
+- **Mobile playlist surface**. New files:
+  `apps/mobile/src/hooks/usePlaylists.ts` — `usePlaylists` read hook
+  (fetches auth user's playlists) and `usePlaylistActions` write hook
+  (create, update, remove) following the `useComments`/`useFollows`
+  pattern. `apps/mobile/src/screens/PlaylistsScreen.tsx` — FlatList with
+  inline create form (title + public checkbox), per-card delete with
+  activity indicator, pull-to-refresh with first-load spinner gate
+  (`hasLoadedOnce` ref), inline error banner for post-first-load refresh
+  failures, and card tap navigation to detail.
+  `apps/mobile/src/screens/PlaylistDetailScreen.tsx` — track list with
+  position/title/artist/duration columns, public/private badge,
+  pull-to-refresh, inline error banner, "Edit Tracks" mode with — Add
+  Track form (title, artist, duration in seconds) and per-track remove
+  buttons (×), race-condition guard disabling all editing controls
+  during save/remove.
+- **Web home page "My Playlists" link** — green button linking to
+  `/playlists`, visible only to authenticated users.
 
-### Changed
+### Fixed
 
-- **`apps/api/tests/setup.ts`** — added `prisma.comment.deleteMany()`,
-  `prisma.follow.deleteMany()`, and `prisma.notification.deleteMany()`
-  to the top of `beforeEach` so the new tables are wiped before any
-  token or profile deletes. SQLite FK race safety even with
-  `onDelete: Cascade`.
-- **`apps/api/src/shared/pagination/format.ts`** (new) + a refactor
-  of `commentController` / `followController` / `notificationController`
-  — extracted the triplicated paginated response envelope
-  construction into a shared `envelope(page, pageSize, total)` helper
-  that returns `PaginationMeta & { hasNext, hasPrev }`. The comment
-  controller's inline `totalPages` + `hasNext` + `hasPrev` block, plus
-  the local `envelope()` helpers in the follow + notification
-  controllers, all now call the shared helper. 3 controllers → 1
-  source of truth; ~20 lines of duplication removed; response shape
-  is unchanged (behavior-preserving refactor). The older
-  `paginate.ts` `metaFromTotal()` (used by `paginateCreators()`) is
-  intentionally **NOT** replaced — its 4-field return shape is the
-  right call for the creators list response, and reusing `envelope()`
-  there would be an unrelated behavior change.
+- **Docs workflow Node incompatibility** — `markdownlint-cli2@0.23.0`
+  does not support Node 20. Changed `.github/workflows/docs.yml` from
+  `node-version: 20` to `node-version: 18` and reordered setup-node
+  before `pnpm/action-setup`.
+- **Mobile act() warnings** — `AuthProvider`'s async `useEffect` load
+  called `setIsLoading(false)` in a `finally` block after
+  `AsyncStorage.getItem`, triggering React Testing Library act()
+  warnings in `login-screen.test.tsx` and `register-screen.test.tsx`.
+  Wrapped all assertions in `await waitFor(() => {...})`.
 
 ## [0.2.0] - 2026-07-08
 
