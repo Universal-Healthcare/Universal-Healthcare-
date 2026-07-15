@@ -30,24 +30,6 @@ vi.mock('../lib/auth-context', () => ({
   AuthProvider: ({ children }: { children: ReactNode }) => children,
 }))
 
-vi.mock('../lib/api-client', () => ({
-  ApiError: class ApiError extends Error {
-    status: number
-    constructor(status: number, message: string) {
-      super(message)
-      this.status = status
-    }
-  },
-  apiFetch: vi.fn(),
-  authHeaders: vi.fn(),
-}))
-
-vi.mock('../lib/auth-client', () => ({
-  loginUser: vi.fn(),
-  registerUser: vi.fn(),
-  AuthApiError: class AuthApiError extends Error {},
-}))
-
 vi.mock('../lib/playlist-client', () => ({
   // The page imports `listMyPlaylists` (not `getMyPlaylists`). The export
   // names here MUST match the page's imports or the page will get

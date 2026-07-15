@@ -1,14 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import RegisterPage from '../app/register/page'
 import { AuthProvider } from '../lib/auth-context'
-
-vi.mock('../lib/auth-client', () => ({
-  loginUser: vi.fn(),
-  registerUser: vi.fn(),
-  AuthApiError: class AuthApiError extends Error {},
-}))
 
 function renderRegisterPage() {
   return render(

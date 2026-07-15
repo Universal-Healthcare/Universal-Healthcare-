@@ -23,24 +23,6 @@ vi.mock('../lib/creator-client', () => ({
   getCreatorBySlug: (...args: unknown[]) => mockGetCreatorBySlug(...args),
 }))
 
-vi.mock('../lib/api-client', () => ({
-  ApiError: class ApiError extends Error {
-    status: number
-    constructor(status: number, message: string) {
-      super(message)
-      this.status = status
-    }
-  },
-  apiFetch: vi.fn(),
-  authHeaders: vi.fn(),
-}))
-
-vi.mock('../lib/auth-client', () => ({
-  loginUser: vi.fn(),
-  registerUser: vi.fn(),
-  AuthApiError: class AuthApiError extends Error {},
-}))
-
 // ─────────────────────────────────────────────────────────────────────────────
 //  Defaults
 // ─────────────────────────────────────────────────────────────────────────────
