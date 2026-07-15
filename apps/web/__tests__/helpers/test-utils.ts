@@ -13,9 +13,12 @@ import type {
  * Shared test helpers for `apps/web/__tests__/*-page.test.tsx`.
  *
  * Each test file still owns its own `vi.hoisted` mocks (because they need to
- * be referenced by `vi.mock` factories within the same module). These helpers
- * expose pure value factories and a small UI helper that can be safely
- * imported across files.
+ * be referenced by `vi.mock` factories within the same module — vitest
+ * hoists both `vi.mock` and `vi.hoisted` above static imports, so any
+ * factory that dereferences an imported binding hits a TDZ).
+ *
+ * These helpers expose pure value factories (used in test bodies/assertions)
+ * and a small UI helper that can be safely imported across files.
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
