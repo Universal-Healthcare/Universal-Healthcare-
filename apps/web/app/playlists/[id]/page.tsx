@@ -2,10 +2,11 @@
 
 import type { PlaylistResponse, TrackResponse } from '@universal-healthcare/shared'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../../lib/auth-context'
 import {
+  deletePlaylist,
   getMyPlaylist,
   getPublicPlaylist,
   updatePlaylist,
@@ -82,6 +83,7 @@ function TrackRow({ track, position }: TrackRowProps) {
 
 export default function PlaylistDetailPage() {
   const params = useParams<{ id: string }>()
+  const router = useRouter()
   const { token } = useAuth()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [editing, setEditing] = useState(false)
@@ -89,6 +91,9 @@ export default function PlaylistDetailPage() {
   const [editIsPublic, setEditIsPublic] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -118,6 +123,7 @@ export default function PlaylistDetailPage() {
     setEditTitle(state.playlist.title)
     setEditIsPublic(state.playlist.isPublic)
     setEditError(null)
+    setDeleteConfirm(false)
     setEditing(true)
   }, [state])
 
@@ -144,6 +150,22 @@ export default function PlaylistDetailPage() {
     },
     [token, params.id, editTitle, editIsPublic]
   )
+
+  const handleDelete = useCallback(async () => {
+    if (!token) return
+    setDeleting(true)
+    setDeleteError(null)
+    try {
+      await deletePlaylist(token, params.id)
+      router.push('/playlists')
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : 'Failed to delete playlist'
+      )
+      setDeleting(false)
+      setDeleteConfirm(false)
+    }
+  }, [token, params.id, router])
 
   // ── Loading ─────────────────────────────────────────────────────────────
   if (state.status === 'loading') {
@@ -203,34 +225,123 @@ export default function PlaylistDetailPage() {
         </Link>
 
         {token && !editing && (
-          <button
-            type="button"
-            onClick={startEditing}
-            style={{
-              padding: '0.375rem 0.75rem',
-              fontSize: '0.8125rem',
-              fontWeight: 500,
-              borderRadius: '0.5rem',
-              border: '1px solid var(--border, #d1d5db)',
-              background: 'transparent',
-              color: 'var(--muted, #6b7280)',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#2563eb'
-              e.currentTarget.style.color = '#2563eb'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor =
-                'var(--border, #d1d5db)'
-              e.currentTarget.style.color = 'var(--muted, #6b7280)'
-            }}
-          >
-            Edit
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              type="button"
+              onClick={startEditing}
+              style={{
+                padding: '0.375rem 0.75rem',
+                fontSize: '0.8125rem',
+                fontWeight: 500,
+                borderRadius: '0.5rem',
+                border: '1px solid var(--border, #d1d5db)',
+                background: 'transparent',
+                color: 'var(--muted, #6b7280)',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#2563eb'
+                e.currentTarget.style.color = '#2563eb'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor =
+                  'var(--border, #d1d5db)'
+                e.currentTarget.style.color = 'var(--muted, #6b7280)'
+              }}
+            >
+              Edit
+            </button>
+
+            {deleteConfirm ? (
+              <div style={{ display: 'flex', gap: '0.375rem' }}>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  style={{
+                    padding: '0.375rem 0.75rem',
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                    borderRadius: '0.5rem',
+                    border: 'none',
+                    background: deleting ? '#fca5a5' : '#b00020',
+                    color: '#fff',
+                    cursor: deleting ? 'not-allowed' : 'pointer',
+                    opacity: deleting ? 0.6 : 1,
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!deleting)
+                      (e.currentTarget.style.background = '#8b0015')
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!deleting)
+                      (e.currentTarget.style.background = '#b00020')
+                  }}
+                >
+                  {deleting ? 'Deleting…' : 'Confirm'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeleteConfirm(false)
+                    setDeleteError(null)
+                  }}
+                  disabled={deleting}
+                  style={{
+                    padding: '0.375rem 0.75rem',
+                    fontSize: '0.8125rem',
+                    fontWeight: 500,
+                    borderRadius: '0.5rem',
+                    border: '1px solid var(--border, #d1d5db)',
+                    background: 'transparent',
+                    color: 'var(--muted, #6b7280)',
+                    cursor: deleting ? 'not-allowed' : 'pointer',
+                    opacity: deleting ? 0.5 : 1,
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setDeleteConfirm(true)}
+                style={{
+                  padding: '0.375rem 0.75rem',
+                  fontSize: '0.8125rem',
+                  fontWeight: 500,
+                  borderRadius: '0.5rem',
+                  border: '1px solid transparent',
+                  background: 'transparent',
+                  color: 'var(--muted, #6b7280)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#b00020'
+                  e.currentTarget.style.borderColor = '#fecaca'
+                  e.currentTarget.style.background = '#fef2f2'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'var(--muted, #6b7280)'
+                  e.currentTarget.style.borderColor = 'transparent'
+                  e.currentTarget.style.background = 'transparent'
+                }}
+              >
+                Delete
+              </button>
+            )}
+          </div>
         )}
       </div>
+
+      {deleteError && (
+        <p role="alert" style={{ marginBottom: '1rem' }}>
+          {deleteError}
+        </p>
+      )}
 
       {/* ── Edit form ──────────────────────────────────────────────────── */}
       {editing ? (
