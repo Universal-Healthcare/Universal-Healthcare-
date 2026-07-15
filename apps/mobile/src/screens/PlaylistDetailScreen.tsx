@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -49,17 +49,26 @@ function TrackRow({ track, position }: { track: TrackResponse; position: number 
 export default function PlaylistDetailScreen({ playlistId, onBack }: Props) {
   const { token } = useAuth()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshError, setRefreshError] = useState<string | null>(null)
+  const hasLoadedOnce = useRef(false)
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    if (state.status === 'ok' || state.status === 'error') {
+      hasLoadedOnce.current = true
+    }
+  }, [state.status])
+
+  const fetchPlaylist = useCallback(async (isRefresh: boolean) => {
+    if (isRefresh) setRefreshing(true)
     try {
-      // Try auth endpoint first (owner sees private playlists),
-      // fall back to public endpoint for anonymous / non-owner viewers.
       if (token) {
         try {
           const result = await apiFetch<{ data: PlaylistResponse }>(
             `/api/playlists/${encodeURIComponent(playlistId)}`,
             { headers: { Authorization: `Bearer ${token}` } }
           )
+          setRefreshError(null)
           setState({ status: 'ok', playlist: result.data })
           return
         } catch (err) {
@@ -70,18 +79,27 @@ export default function PlaylistDetailScreen({ playlistId, onBack }: Props) {
       const result = await apiFetch<{ data: PlaylistResponse }>(
         `/api/playlists/public/${encodeURIComponent(playlistId)}`
       )
+      setRefreshError(null)
       setState({ status: 'ok', playlist: result.data })
     } catch {
-      setState({ status: 'error', message: 'Playlist not found' })
+      if (isRefresh) {
+        setRefreshError('Failed to refresh playlist')
+      } else {
+        setState({ status: 'error', message: 'Playlist not found' })
+      }
+    } finally {
+      if (isRefresh) setRefreshing(false)
     }
   }, [playlistId, token])
 
-  useEffect(() => {
-    load()
-  }, [load])
+  const handleRefresh = useCallback(() => fetchPlaylist(true), [fetchPlaylist])
 
-  // ── Loading ─────────────────────────────────────────────────────────────
-  if (state.status === 'loading') {
+  useEffect(() => {
+    fetchPlaylist(false)
+  }, [fetchPlaylist])
+
+  // ── Loading (first load only) ────────────────────────────────────────────
+  if (state.status === 'loading' && !hasLoadedOnce.current) {
     return (
       <View style={styles.screen}>
         <BackButton onPress={onBack} />
@@ -106,52 +124,61 @@ export default function PlaylistDetailScreen({ playlistId, onBack }: Props) {
   }
 
   // ── OK ──────────────────────────────────────────────────────────────────
-  const { playlist } = state
+  const playlist = state.status === 'ok' ? state.playlist : null
 
   return (
     <View style={styles.screen}>
       <BackButton onPress={onBack} />
 
+      {/* ── Inline error banner (post-first-load refresh failures) ──────── */}
+      {refreshError && (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorBannerText}>{refreshError}</Text>
+        </View>
+      )}
+
       {/* ── Header ────────────────────────────────────────────────────── */}
-      <View style={styles.detailHeader}>
-        <View style={styles.titleRow}>
-          <Text style={styles.heading} numberOfLines={1}>
-            {playlist.title}
-          </Text>
-          <View
-            style={[
-              styles.badge,
-              playlist.isPublic ? styles.badgePublic : styles.badgePrivate,
-            ]}
-          >
-            <Text
+      {playlist && (
+        <View style={styles.detailHeader}>
+          <View style={styles.titleRow}>
+            <Text style={styles.heading} numberOfLines={1}>
+              {playlist.title}
+            </Text>
+            <View
               style={[
-                styles.badgeText,
-                playlist.isPublic
-                  ? styles.badgeTextPublic
-                  : styles.badgeTextPrivate,
+                styles.badge,
+                playlist.isPublic ? styles.badgePublic : styles.badgePrivate,
               ]}
             >
-              {playlist.isPublic ? 'Public' : 'Private'}
-            </Text>
+              <Text
+                style={[
+                  styles.badgeText,
+                  playlist.isPublic
+                    ? styles.badgeTextPublic
+                    : styles.badgeTextPrivate,
+                ]}
+              >
+                {playlist.isPublic ? 'Public' : 'Private'}
+              </Text>
+            </View>
           </View>
+          <Text style={styles.subtitle}>
+            {playlist.tracks.length}{' '}
+            {playlist.tracks.length === 1 ? 'track' : 'tracks'} · Created{' '}
+            {new Date(playlist.createdAt).toLocaleDateString()}
+          </Text>
         </View>
-        <Text style={styles.subtitle}>
-          {playlist.tracks.length}{' '}
-          {playlist.tracks.length === 1 ? 'track' : 'tracks'} · Created{' '}
-          {new Date(playlist.createdAt).toLocaleDateString()}
-        </Text>
-      </View>
+      )}
 
       {/* ── Track list ────────────────────────────────────────────────── */}
-      {playlist.tracks.length === 0 ? (
+      {playlist && playlist.tracks.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>This playlist is empty</Text>
           <Text style={styles.emptySubtitle}>
             Add tracks to get started
           </Text>
         </View>
-      ) : (
+      ) : playlist ? (
         <FlatList
           data={playlist.tracks}
           keyExtractor={(item) => item.id}
@@ -160,8 +187,10 @@ export default function PlaylistDetailScreen({ playlistId, onBack }: Props) {
           )}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           contentContainerStyle={styles.trackList}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
         />
-      )}
+      ) : null}
     </View>
   )
 }
@@ -207,6 +236,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1976d2',
     fontWeight: '500',
+  },
+
+  // Error banner (inline, not full-screen)
+  errorBanner: {
+    backgroundColor: '#fef2f2',
+    borderBottomWidth: 1,
+    borderBottomColor: '#fecaca',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  errorBannerText: {
+    color: '#b00020',
+    fontSize: 13,
   },
 
   // Header
