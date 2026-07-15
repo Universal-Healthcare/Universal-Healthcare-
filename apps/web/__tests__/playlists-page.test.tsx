@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import userEvent, { type UserEvent } from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import PlaylistsPage from '../app/playlists/page'
 
@@ -102,6 +102,15 @@ function setAuth(
     isLoading:
       overrides && 'isLoading' in overrides ? overrides.isLoading : false,
   })
+}
+
+// Click the "+ New Playlist" toggle to reveal the create form. Awaits the
+// button so callers don't have to know that it only renders after the list
+// has loaded.
+async function openCreateForm(user: UserEvent): Promise<void> {
+  await user.click(
+    await screen.findByRole('button', { name: /\+ new playlist/i })
+  )
 }
 
 beforeEach(() => {
@@ -210,9 +219,7 @@ describe('PlaylistsPage', () => {
 
     expect(screen.queryByLabelText(/^title$/i)).not.toBeInTheDocument()
 
-    await user.click(
-      await screen.findByRole('button', { name: /\+ new playlist/i })
-    )
+    await openCreateForm(user)
 
     expect(screen.getByLabelText(/^title$/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/public/i)).toBeInTheDocument()
@@ -222,10 +229,7 @@ describe('PlaylistsPage', () => {
     const user = userEvent.setup()
     render(<PlaylistsPage />)
 
-    // The "+ New Playlist" button only appears once the list has loaded.
-    await user.click(
-      await screen.findByRole('button', { name: /\+ new playlist/i })
-    )
+    await openCreateForm(user)
 
     const submit = screen.getByRole('button', { name: /create playlist/i })
     expect(submit).toBeDisabled()
@@ -238,9 +242,7 @@ describe('PlaylistsPage', () => {
     const user = userEvent.setup()
     render(<PlaylistsPage />)
 
-    await user.click(
-      await screen.findByRole('button', { name: /\+ new playlist/i })
-    )
+    await openCreateForm(user)
     expect(screen.getByLabelText(/^title$/i)).toBeInTheDocument()
 
     // Now the button reads "Cancel".
@@ -261,9 +263,7 @@ describe('PlaylistsPage', () => {
 
     render(<PlaylistsPage />)
 
-    await user.click(
-      await screen.findByRole('button', { name: /\+ new playlist/i })
-    )
+    await openCreateForm(user)
     await user.type(screen.getByLabelText(/^title$/i), 'Brand New')
     await user.click(screen.getByLabelText(/public/i))
     await user.click(screen.getByRole('button', { name: /create playlist/i }))
@@ -287,9 +287,7 @@ describe('PlaylistsPage', () => {
 
     render(<PlaylistsPage />)
 
-    await user.click(
-      await screen.findByRole('button', { name: /\+ new playlist/i })
-    )
+    await openCreateForm(user)
     await user.type(screen.getByLabelText(/^title$/i), 'Bad Idea')
     await user.click(screen.getByRole('button', { name: /create playlist/i }))
 
