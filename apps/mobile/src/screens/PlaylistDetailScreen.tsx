@@ -5,11 +5,13 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native'
 import type { PlaylistResponse, TrackResponse } from '@universal-healthcare/shared'
 import { ApiError, apiFetch } from '../services/api-client'
 import { useAuth } from '../hooks/useAuth'
+import { usePlaylistActions } from '../hooks/usePlaylists'
 
 type LoadState =
   | { status: 'loading' }
@@ -27,7 +29,21 @@ function formatDuration(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-function TrackRow({ track, position }: { track: TrackResponse; position: number }) {
+function TrackRow({
+  track,
+  position,
+  onRemove,
+  editing,
+  removing,
+  anyRemoving,
+}: {
+  track: TrackResponse
+  position: number
+  onRemove?: (id: string) => void
+  editing?: boolean
+  removing?: boolean
+  anyRemoving?: boolean
+}) {
   return (
     <View style={styles.trackRow}>
       <Text style={styles.trackPosition}>{position}</Text>
@@ -42,16 +58,46 @@ function TrackRow({ track, position }: { track: TrackResponse; position: number 
       <Text style={styles.trackDuration}>
         {formatDuration(track.duration)}
       </Text>
+      {editing && onRemove && (
+        <Pressable
+          onPress={() => onRemove(track.id)}
+          disabled={removing || anyRemoving}
+          style={({ pressed }) => [
+            styles.removeButton,
+            pressed && !removing && !anyRemoving && styles.removeButtonPressed,
+            (removing || anyRemoving) && styles.removeButtonDisabled,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={`Remove track ${track.title}`}
+        >
+          {removing ? (
+            <ActivityIndicator size="small" color="#b00020" />
+          ) : (
+            <Text style={styles.removeButtonText}>✕</Text>
+          )}
+        </Pressable>
+      )}
     </View>
   )
 }
 
 export default function PlaylistDetailScreen({ playlistId, onBack }: Props) {
   const { token } = useAuth()
+  const actions = usePlaylistActions()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [refreshing, setRefreshing] = useState(false)
   const [refreshError, setRefreshError] = useState<string | null>(null)
   const hasLoadedOnce = useRef(false)
+
+  // Track editing state
+  const [editingTracks, setEditingTracks] = useState(false)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newTitle, setNewTitle] = useState('')
+  const [newArtist, setNewArtist] = useState('')
+  const [newDuration, setNewDuration] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [trackError, setTrackError] = useState<string | null>(null)
+  const [removingId, setRemovingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (state.status === 'ok' || state.status === 'error') {
@@ -59,44 +105,119 @@ export default function PlaylistDetailScreen({ playlistId, onBack }: Props) {
     }
   }, [state.status])
 
-  const fetchPlaylist = useCallback(async (isRefresh: boolean) => {
-    if (isRefresh) setRefreshing(true)
-    try {
-      if (token) {
-        try {
-          const result = await apiFetch<{ data: PlaylistResponse }>(
-            `/api/playlists/${encodeURIComponent(playlistId)}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          )
-          setRefreshError(null)
-          setState({ status: 'ok', playlist: result.data })
-          return
-        } catch (err) {
-          const status = err instanceof ApiError ? err.status : undefined
-          if (status !== 404) throw err
+  const fetchPlaylist = useCallback(
+    async (isRefresh: boolean) => {
+      if (isRefresh) setRefreshing(true)
+      try {
+        if (token) {
+          try {
+            const result = await apiFetch<{ data: PlaylistResponse }>(
+              `/api/playlists/${encodeURIComponent(playlistId)}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            )
+            setRefreshError(null)
+            setState({ status: 'ok', playlist: result.data })
+            return
+          } catch (err) {
+            const status = err instanceof ApiError ? err.status : undefined
+            if (status !== 404) throw err
+          }
         }
+        const result = await apiFetch<{ data: PlaylistResponse }>(
+          `/api/playlists/public/${encodeURIComponent(playlistId)}`
+        )
+        setRefreshError(null)
+        setState({ status: 'ok', playlist: result.data })
+      } catch {
+        if (isRefresh) {
+          setRefreshError('Failed to refresh playlist')
+        } else {
+          setState({ status: 'error', message: 'Playlist not found' })
+        }
+      } finally {
+        if (isRefresh) setRefreshing(false)
       }
-      const result = await apiFetch<{ data: PlaylistResponse }>(
-        `/api/playlists/public/${encodeURIComponent(playlistId)}`
-      )
-      setRefreshError(null)
-      setState({ status: 'ok', playlist: result.data })
-    } catch {
-      if (isRefresh) {
-        setRefreshError('Failed to refresh playlist')
-      } else {
-        setState({ status: 'error', message: 'Playlist not found' })
-      }
-    } finally {
-      if (isRefresh) setRefreshing(false)
-    }
-  }, [playlistId, token])
+    },
+    [playlistId, token]
+  )
 
-  const handleRefresh = useCallback(() => fetchPlaylist(true), [fetchPlaylist])
+  const handleRefresh = useCallback(
+    () => fetchPlaylist(true),
+    [fetchPlaylist]
+  )
 
   useEffect(() => {
     fetchPlaylist(false)
   }, [fetchPlaylist])
+
+  // ── Track editing handlers ───────────────────────────────────────────
+
+  const handleAddTrack = useCallback(async () => {
+    if (state.status !== 'ok') return
+    const duration = parseInt(newDuration, 10)
+    if (!newTitle.trim() || !newArtist.trim() || !duration) return
+    setSaving(true)
+    setTrackError(null)
+    try {
+      const newTrack = {
+        title: newTitle.trim(),
+        artist: newArtist.trim(),
+        duration,
+      }
+      const updated = await actions.update(playlistId, {
+        tracks: [
+          ...state.playlist.tracks.map((t) => ({
+            title: t.title,
+            artist: t.artist,
+            duration: t.duration,
+          })),
+          newTrack,
+        ],
+      })
+      setState({ status: 'ok', playlist: updated })
+      setNewTitle('')
+      setNewArtist('')
+      setNewDuration('')
+      setShowAddForm(false)
+    } catch (err) {
+      setTrackError(
+        err instanceof Error ? err.message : 'Failed to add track'
+      )
+    } finally {
+      setSaving(false)
+    }
+  }, [state, playlistId, actions, newTitle, newArtist, newDuration])
+
+  const handleRemoveTrack = useCallback(
+    async (trackId: string) => {
+      if (state.status !== 'ok') return
+      setRemovingId(trackId)
+      try {
+        const updated = await actions.update(playlistId, {
+          tracks: state.playlist.tracks
+            .filter((t) => t.id !== trackId)
+            .map((t) => ({
+              title: t.title,
+              artist: t.artist,
+              duration: t.duration,
+            })),
+        })
+        setState({ status: 'ok', playlist: updated })
+      } catch (err) {
+        setTrackError(
+          err instanceof Error ? err.message : 'Failed to remove track'
+        )
+      } finally {
+        setRemovingId(null)
+      }
+    },
+    [state, playlistId, actions]
+  )
+
+  const startEditingTracks = useCallback(() => {
+    setTrackError(null)
+    setEditingTracks(true)
+  }, [])
 
   // ── Loading (first load only) ────────────────────────────────────────────
   if (state.status === 'loading' && !hasLoadedOnce.current) {
@@ -130,10 +251,12 @@ export default function PlaylistDetailScreen({ playlistId, onBack }: Props) {
     <View style={styles.screen}>
       <BackButton onPress={onBack} />
 
-      {/* ── Inline error banner (post-first-load refresh failures) ──────── */}
-      {refreshError && (
+      {/* ── Inline error banner ────────────────────────────────────────── */}
+      {(refreshError || trackError) && (
         <View style={styles.errorBanner}>
-          <Text style={styles.errorBannerText}>{refreshError}</Text>
+          <Text style={styles.errorBannerText}>
+            {refreshError || trackError}
+          </Text>
         </View>
       )}
 
@@ -147,7 +270,9 @@ export default function PlaylistDetailScreen({ playlistId, onBack }: Props) {
             <View
               style={[
                 styles.badge,
-                playlist.isPublic ? styles.badgePublic : styles.badgePrivate,
+                playlist.isPublic
+                  ? styles.badgePublic
+                  : styles.badgePrivate,
               ]}
             >
               <Text
@@ -162,11 +287,130 @@ export default function PlaylistDetailScreen({ playlistId, onBack }: Props) {
               </Text>
             </View>
           </View>
-          <Text style={styles.subtitle}>
-            {playlist.tracks.length}{' '}
-            {playlist.tracks.length === 1 ? 'track' : 'tracks'} · Created{' '}
-            {new Date(playlist.createdAt).toLocaleDateString()}
+          <View style={styles.subtitleRow}>
+            <Text style={styles.subtitle}>
+              {playlist.tracks.length}{' '}
+              {playlist.tracks.length === 1 ? 'track' : 'tracks'} · Created{' '}
+              {new Date(playlist.createdAt).toLocaleDateString()}
+            </Text>
+            {token && !editingTracks && (
+              <Pressable
+                onPress={startEditingTracks}
+                style={({ pressed }) => [
+                  styles.editTracksButton,
+                  pressed && styles.editTracksButtonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Edit tracks"
+              >
+                <Text style={styles.editTracksButtonText}>Edit Tracks</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* ── Track editing toolbar ─────────────────────────────────── */}
+          {editingTracks && (
+            <View style={styles.trackToolbar}>
+              <Pressable
+                onPress={() => {
+                  setShowAddForm((v) => !v)
+                  setTrackError(null)
+                }}
+                style={({ pressed }) => [
+                  styles.addTrackButton,
+                  pressed && styles.addTrackButtonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  showAddForm ? 'Cancel adding track' : 'Add track'
+                }
+              >
+                <Text style={styles.addTrackButtonText}>
+                  {showAddForm ? 'Cancel' : '+ Add Track'}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  setEditingTracks(false)
+                  setShowAddForm(false)
+                  setTrackError(null)
+                }}
+                style={({ pressed }) => [
+                  styles.doneButton,
+                  pressed && styles.doneButtonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Done editing tracks"
+              >
+                <Text style={styles.doneButtonText}>Done</Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* ── Add track form ────────────────────────────────────────────── */}
+      {showAddForm && (
+        <View style={styles.addForm}>
+          <TextInput
+            style={styles.input}
+            value={newTitle}
+            onChangeText={setNewTitle}
+            placeholder="Track title"
+            placeholderTextColor="#9ca3af"
+            maxLength={300}
+          />
+          <TextInput
+            style={styles.input}
+            value={newArtist}
+            onChangeText={setNewArtist}
+            placeholder="Artist name"
+            placeholderTextColor="#9ca3af"
+            maxLength={300}
+          />
+          <TextInput
+            style={[styles.input, styles.durationInput]}
+            value={newDuration}
+            onChangeText={setNewDuration}
+            placeholder="Duration (seconds)"
+            placeholderTextColor="#9ca3af"
+            keyboardType="numeric"
+            maxLength={6}
+          />
+          {trackError && (
+            <Text style={styles.formError}>{trackError}</Text>
+          )}
+
+          <Pressable
+            onPress={handleAddTrack}
+            disabled={
+              saving ||
+              removingId !== null ||
+              !newTitle.trim() ||
+              !newArtist.trim() ||
+              !newDuration.trim()
+            }
+            style={({ pressed }) => [
+              styles.submitButton,
+              (saving ||
+                !newTitle.trim() ||
+                !newArtist.trim() ||
+                !newDuration.trim()) &&
+                styles.submitButtonDisabled,
+              pressed &&
+                !saving &&
+                newTitle.trim() &&
+                newArtist.trim() &&
+                newDuration.trim() &&
+                styles.submitButtonPressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Save track"
+          >
+          <Text style={styles.submitButtonText}>
+            {saving ? 'Adding…' : 'Add Track'}
           </Text>
+          </Pressable>
         </View>
       )}
 
@@ -183,7 +427,14 @@ export default function PlaylistDetailScreen({ playlistId, onBack }: Props) {
           data={playlist.tracks}
           keyExtractor={(item) => item.id}
           renderItem={({ item, index }) => (
-            <TrackRow track={item} position={index + 1} />
+            <TrackRow
+              track={item}
+              position={index + 1}
+              onRemove={handleRemoveTrack}
+              editing={editingTracks}
+              removing={removingId === item.id}
+              anyRemoving={removingId !== null || saving}
+            />
           )}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           contentContainerStyle={styles.trackList}
@@ -238,7 +489,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // Error banner (inline, not full-screen)
+  // Error banner
   errorBanner: {
     backgroundColor: '#fef2f2',
     borderBottomWidth: 1,
@@ -290,9 +541,113 @@ const styles = StyleSheet.create({
   badgeTextPrivate: {
     color: '#6b7280',
   },
+  subtitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   subtitle: {
     fontSize: 13,
     color: '#6b7280',
+  },
+
+  // Edit tracks
+  editTracksButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  editTracksButtonPressed: {
+    borderColor: '#2563eb',
+  },
+  editTracksButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+
+  // Track toolbar
+  trackToolbar: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  addTrackButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 6,
+    backgroundColor: '#1a7f37',
+  },
+  addTrackButtonPressed: {
+    backgroundColor: '#157a31',
+  },
+  addTrackButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  doneButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  doneButtonPressed: {
+    backgroundColor: '#f3f4f6',
+  },
+  doneButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+
+  // Add form
+  addForm: {
+    marginHorizontal: 20,
+    marginVertical: 12,
+    padding: 16,
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    gap: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: '#111',
+  },
+  durationInput: {
+    width: 160,
+  },
+  submitButton: {
+    backgroundColor: '#1a7f37',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#d1d5db',
+    opacity: 0.6,
+  },
+  submitButtonPressed: {
+    backgroundColor: '#157a31',
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  formError: {
+    color: '#b00020',
+    fontSize: 13,
   },
 
   // Track list
@@ -330,6 +685,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#9ca3af',
     fontVariant: ['tabular-nums'],
+    marginRight: 8,
+  },
+
+  // Remove button
+  removeButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fef2f2',
+  },
+  removeButtonPressed: {
+    backgroundColor: '#fecaca',
+  },
+  removeButtonDisabled: {
+    opacity: 0.5,
+  },
+  removeButtonText: {
+    fontSize: 14,
+    color: '#b00020',
+    fontWeight: '600',
   },
 
   // Empty
