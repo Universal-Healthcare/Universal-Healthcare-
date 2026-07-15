@@ -5,7 +5,11 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../../lib/auth-context'
-import { getMyPlaylist, getPublicPlaylist } from '../../../lib/playlist-client'
+import {
+  getMyPlaylist,
+  getPublicPlaylist,
+  updatePlaylist,
+} from '../../../lib/playlist-client'
 
 type LoadState =
   | { status: 'loading' }
@@ -80,18 +84,20 @@ export default function PlaylistDetailPage() {
   const params = useParams<{ id: string }>()
   const { token } = useAuth()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
+  const [editing, setEditing] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editIsPublic, setEditIsPublic] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
-      // Try auth endpoint first (owner gets private playlists),
-      // fall back to public endpoint for anonymous / non-owner viewers.
       if (token) {
         try {
           const result = await getMyPlaylist(token, params.id)
           setState({ status: 'ok', playlist: result.data })
           return
         } catch (err) {
-          // If 404 (private or not found), try public endpoint below.
           const status = (err as { status?: number }).status
           if (status !== 404) throw err
         }
@@ -106,6 +112,38 @@ export default function PlaylistDetailPage() {
   useEffect(() => {
     load()
   }, [load])
+
+  const startEditing = useCallback(() => {
+    if (state.status !== 'ok') return
+    setEditTitle(state.playlist.title)
+    setEditIsPublic(state.playlist.isPublic)
+    setEditError(null)
+    setEditing(true)
+  }, [state])
+
+  const handleSave = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      if (!token || !editTitle.trim()) return
+      setSaving(true)
+      setEditError(null)
+      try {
+        const result = await updatePlaylist(token, params.id, {
+          title: editTitle.trim(),
+          isPublic: editIsPublic,
+        })
+        setState({ status: 'ok', playlist: result.data })
+        setEditing(false)
+      } catch (err) {
+        setEditError(
+          err instanceof Error ? err.message : 'Failed to save changes'
+        )
+      } finally {
+        setSaving(false)
+      }
+    },
+    [token, params.id, editTitle, editIsPublic]
+  )
 
   // ── Loading ─────────────────────────────────────────────────────────────
   if (state.status === 'loading') {
@@ -145,65 +183,206 @@ export default function PlaylistDetailPage() {
 
   return (
     <main>
-      <Link
-        href="/playlists"
-        style={{
-          display: 'inline-block',
-          marginBottom: '1.25rem',
-          fontSize: '0.875rem',
-          color: '#2563eb',
-          textDecoration: 'none',
-        }}
-      >
-        ← Back to playlists
-      </Link>
-
-      {/* ── Header ──────────────────────────────────────────────────────── */}
       <div
         style={{
           display: 'flex',
-          alignItems: 'center',
-          gap: '0.75rem',
-          marginBottom: '0.5rem',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: '1.25rem',
         }}
       >
-        <h1
+        <Link
+          href="/playlists"
           style={{
-            fontSize: '1.75rem',
-            margin: 0,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            fontSize: '0.875rem',
+            color: '#2563eb',
+            textDecoration: 'none',
           }}
         >
-          {playlist.title}
-        </h1>
-        <span
-          style={{
-            fontSize: '0.6875rem',
-            fontWeight: 500,
-            padding: '0.125rem 0.5rem',
-            borderRadius: '999px',
-            background: playlist.isPublic ? '#d1fae5' : 'var(--muted, #e5e7eb)',
-            color: playlist.isPublic ? '#065f46' : '#6b7280',
-            flexShrink: 0,
-          }}
-        >
-          {playlist.isPublic ? 'Public' : 'Private'}
-        </span>
+          ← Back to playlists
+        </Link>
+
+        {token && !editing && (
+          <button
+            type="button"
+            onClick={startEditing}
+            style={{
+              padding: '0.375rem 0.75rem',
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              borderRadius: '0.5rem',
+              border: '1px solid var(--border, #d1d5db)',
+              background: 'transparent',
+              color: 'var(--muted, #6b7280)',
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#2563eb'
+              e.currentTarget.style.color = '#2563eb'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor =
+                'var(--border, #d1d5db)'
+              e.currentTarget.style.color = 'var(--muted, #6b7280)'
+            }}
+          >
+            Edit
+          </button>
+        )}
       </div>
 
-      <div
-        style={{
-          fontSize: '0.8125rem',
-          color: 'var(--muted, #6b7280)',
-          marginBottom: '1.5rem',
-        }}
-      >
-        {playlist.tracks.length}{' '}
-        {playlist.tracks.length === 1 ? 'track' : 'tracks'} · Created{' '}
-        {new Date(playlist.createdAt).toLocaleDateString()}
-      </div>
+      {/* ── Edit form ──────────────────────────────────────────────────── */}
+      {editing ? (
+        <form
+          onSubmit={handleSave}
+          style={{
+            background: 'var(--card-bg, #f9fafb)',
+            border: '1px solid var(--border, #e5e7eb)',
+            borderRadius: '0.75rem',
+            padding: '1.25rem',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem',
+          }}
+        >
+          <div>
+            <label htmlFor="edit-title">Title</label>
+            <input
+              id="edit-title"
+              type="text"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              required
+              maxLength={200}
+              style={{
+                width: '100%',
+                padding: '0.5rem 0.75rem',
+                fontSize: '1rem',
+                border: '1px solid var(--border, #d1d5db)',
+                borderRadius: '0.5rem',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontWeight: 400,
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={editIsPublic}
+              onChange={(e) => setEditIsPublic(e.target.checked)}
+              style={{ width: 'auto', cursor: 'pointer' }}
+            />
+            Make this playlist public
+          </label>
+
+          {editError && <p role="alert">{editError}</p>}
+
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              type="submit"
+              disabled={saving || !editTitle.trim()}
+              style={{
+                padding: '0.5rem 1.25rem',
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                borderRadius: '0.5rem',
+                border: 'none',
+                background:
+                  saving || !editTitle.trim()
+                    ? 'var(--muted, #d1d5db)'
+                    : '#1a7f37',
+                color: '#fff',
+                cursor:
+                  saving || !editTitle.trim() ? 'not-allowed' : 'pointer',
+                transition: 'background 0.15s',
+                opacity: saving || !editTitle.trim() ? 0.6 : 1,
+              }}
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              disabled={saving}
+              style={{
+                padding: '0.5rem 1.25rem',
+                fontWeight: 500,
+                fontSize: '0.875rem',
+                borderRadius: '0.5rem',
+                border: '1px solid var(--border, #d1d5db)',
+                background: 'transparent',
+                color: 'var(--muted, #6b7280)',
+                cursor: saving ? 'not-allowed' : 'pointer',
+                opacity: saving ? 0.5 : 1,
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : (
+        <>
+          {/* ── Header ────────────────────────────────────────────────── */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              marginBottom: '0.5rem',
+            }}
+          >
+            <h1
+              style={{
+                fontSize: '1.75rem',
+                margin: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {playlist.title}
+            </h1>
+            <span
+              style={{
+                fontSize: '0.6875rem',
+                fontWeight: 500,
+                padding: '0.125rem 0.5rem',
+                borderRadius: '999px',
+                background: playlist.isPublic
+                  ? '#d1fae5'
+                  : 'var(--muted, #e5e7eb)',
+                color: playlist.isPublic ? '#065f46' : '#6b7280',
+                flexShrink: 0,
+              }}
+            >
+              {playlist.isPublic ? 'Public' : 'Private'}
+            </span>
+          </div>
+
+          <div
+            style={{
+              fontSize: '0.8125rem',
+              color: 'var(--muted, #6b7280)',
+              marginBottom: '1.5rem',
+            }}
+          >
+            {playlist.tracks.length}{' '}
+            {playlist.tracks.length === 1 ? 'track' : 'tracks'} · Created{' '}
+            {new Date(playlist.createdAt).toLocaleDateString()}
+          </div>
+        </>
+      )}
 
       {/* ── Track list ──────────────────────────────────────────────────── */}
       {playlist.tracks.length === 0 ? (
