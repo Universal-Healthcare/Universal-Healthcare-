@@ -2,33 +2,7 @@ import { render, screen } from '@testing-library/react'
 import type { CreatorProfileResponse } from '@universal-healthcare/shared'
 import { describe, expect, it, vi } from 'vitest'
 import CreatorProfilePage from '../app/creators/[slug]/page'
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Mock fixtures
-// ─────────────────────────────────────────────────────────────────────────────
-
-const defaultCreatorProfile: CreatorProfileResponse = {
-  id: 'cp-1',
-  userId: 'u-1',
-  displayName: 'Solar Vibes',
-  slug: 'solar-vibes',
-  bio: 'Indie producer from Lagos',
-  avatarUrl: null,
-  genre: 'Indie',
-  location: 'Lagos',
-  isVerified: true,
-  followerCount: 0,
-  trackCount: 0,
-  createdAt: '2026-01-01T00:00:00.000Z',
-  updatedAt: '2026-01-01T00:00:00.000Z',
-}
-
-// Spread defaults first, then overrides — this preserves callers' explicit
-// `null` overrides (a `??`-based defaulting helper would silently coerce
-// `null` back to the default).
-const mockCreatorProfile = (
-  overrides?: Partial<CreatorProfileResponse>
-): CreatorProfileResponse => ({ ...defaultCreatorProfile, ...overrides })
+import { mockCreatorProfile } from './helpers/test-utils'
 
 // Hoisted so vi.mock factories can reference them.
 const { mockGetCreatorBySlug, mockUseParams } = vi.hoisted(() => ({

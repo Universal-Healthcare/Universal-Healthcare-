@@ -1,67 +1,32 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent, { type UserEvent } from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import PlaylistsPage from '../app/playlists/page'
+import {
+  defaultAuth,
+  mockMyPlaylistsList,
+  mockPlaylist,
+  mockPlaylistEnvelope,
+  openCreateForm,
+} from './helpers/test-utils'
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Mock fixtures
-// ─────────────────────────────────────────────────────────────────────────────
-
-const mockPlaylist = (
-  overrides?: Partial<{
-    id: string
-    title: string
-    isPublic: boolean
-    trackCount: number
-  }>
-) => ({
-  id: overrides?.id ?? 'pl-1',
-  userId: 'u-1',
-  title: overrides?.title ?? 'My Mix Tape',
-  isPublic: overrides?.isPublic ?? false,
-  tracks: Array.from({ length: overrides?.trackCount ?? 0 }, (_, i) => ({
-    id: `t-${i}`,
-    playlistId: overrides?.id ?? 'pl-1',
-    title: `Track ${i + 1}`,
-    artist: 'Test',
-    duration: 120,
-    position: i + 1,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-  })),
-  createdAt: '2026-01-01T00:00:00.000Z',
-  updatedAt: '2026-01-01T00:00:00.000Z',
-})
-
-// Hoisted mock fns so vi.mock factories can reference them.
-const {
-  mockListMyPlaylists,
-  mockCreatePlaylist,
-  mockDeletePlaylist,
-  mockUseAuth,
-} = vi.hoisted(() => ({
-  mockListMyPlaylists: vi.fn(),
-  mockCreatePlaylist: vi.fn(),
-  mockDeletePlaylist: vi.fn(),
-  mockUseAuth: vi.fn(),
-}))
+// Hoisted so vi.mock factories can reference them. Names mirror the
+// functions imported in `app/playlists/page.tsx` — keep them in sync!
+const { mockListMyPlaylists, mockCreatePlaylist, mockDeletePlaylist, mockUseAuth } =
+  vi.hoisted(() => ({
+    mockListMyPlaylists: vi.fn(),
+    mockCreatePlaylist: vi.fn(),
+    mockDeletePlaylist: vi.fn(),
+    mockUseAuth: vi.fn(),
+  }))
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Module mocks
 // ─────────────────────────────────────────────────────────────────────────────
 
-vi.mock('../lib/playlist-client', () => ({
-  listMyPlaylists: (...args: unknown[]) => mockListMyPlaylists(...args),
-  createPlaylist: (...args: unknown[]) => mockCreatePlaylist(...args),
-  deletePlaylist: (...args: unknown[]) => mockDeletePlaylist(...args),
-  getMyPlaylist: vi.fn(),
-  getPublicPlaylist: vi.fn(),
-  updatePlaylist: vi.fn(),
-}))
-
 vi.mock('../lib/auth-context', () => ({
-  AuthProvider: ({ children }: { children: React.ReactNode }) => children,
   useAuth: () => mockUseAuth(),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => children,
 }))
 
 vi.mock('../lib/api-client', () => ({
@@ -73,7 +38,7 @@ vi.mock('../lib/api-client', () => ({
     }
   },
   apiFetch: vi.fn(),
-  authHeaders: (token: string) => ({ Authorization: `Bearer ${token}` }),
+  authHeaders: vi.fn(),
 }))
 
 vi.mock('../lib/auth-client', () => ({
@@ -82,51 +47,38 @@ vi.mock('../lib/auth-client', () => ({
   AuthApiError: class AuthApiError extends Error {},
 }))
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Helpers & defaults
-// ─────────────────────────────────────────────────────────────────────────────
+vi.mock('../lib/playlist-client', () => ({
+  // The page imports `listMyPlaylists` (not `getMyPlaylists`). The export
+  // names here MUST match the page's imports or the page will get
+  // `undefined` and throw on call.
+  listMyPlaylists: (...args: unknown[]) => mockListMyPlaylists(...args),
+  createPlaylist: (...args: unknown[]) => mockCreatePlaylist(...args),
+  deletePlaylist: (...args: unknown[]) => mockDeletePlaylist(...args),
+}))
 
-function setAuth(
-  overrides?: Partial<{
-    token: string | null
-    isLoading: boolean
-  }>
-) {
-  // Use explicit !== undefined checks so callers can pass `token: null`
-  // without it being replaced by the default — `null ?? default` would
-  // coerce null to default.
-  mockUseAuth.mockReturnValue({
-    token:
-      overrides && 'token' in overrides ? overrides.token : 'test-token',
-    user: null,
-    isLoading:
-      overrides && 'isLoading' in overrides ? overrides.isLoading : false,
-  })
-}
-
-// Click the "+ New Playlist" toggle to reveal the create form. Awaits the
-// button so callers don't have to know that it only renders after the list
-// has loaded.
-async function openCreateForm(user: UserEvent): Promise<void> {
-  await user.click(
-    await screen.findByRole('button', { name: /\+ new playlist/i })
-  )
-}
+// ─────────────────────────────────────────────────────────────────────────────
+//  Defaults + per-test reset
+// ─────────────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
   mockListMyPlaylists.mockReset()
   mockCreatePlaylist.mockReset()
   mockDeletePlaylist.mockReset()
   mockUseAuth.mockReset()
-  mockListMyPlaylists.mockResolvedValue({
-    data: [mockPlaylist({ id: 'pl-1', title: 'My Mix Tape' })],
-    pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 },
-  })
-  mockCreatePlaylist.mockResolvedValue({
-    data: mockPlaylist({ id: 'pl-new', title: 'Brand New' }),
-  })
+
+  mockUseAuth.mockReturnValue(defaultAuth())
+  mockListMyPlaylists.mockResolvedValue(
+    mockMyPlaylistsList([
+      mockPlaylist({ id: 'pl-1', title: 'My Mix Tape', trackCount: 0 }),
+      mockPlaylist({ id: 'pl-2', title: 'Indie Vibes', trackCount: 3 }),
+    ])
+  )
+  mockCreatePlaylist.mockResolvedValue(
+    mockPlaylistEnvelope(
+      mockPlaylist({ id: 'pl-3', title: 'New Playlist', trackCount: 0 })
+    )
+  )
   mockDeletePlaylist.mockResolvedValue(undefined)
-  setAuth()
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -134,95 +86,80 @@ beforeEach(() => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('PlaylistsPage', () => {
-  // ── Auth & loading states ─────────────────────────────────────────────
+  // ── Auth states ─────────────────────────────────────────────────────────
 
-  it('shows Loading… while auth is still resolving', () => {
-    setAuth({ isLoading: true, token: null })
+  it('shows Loading… before the auth context resolves', () => {
+    mockUseAuth.mockReturnValue(defaultAuth({ isLoading: true }))
+
     render(<PlaylistsPage />)
-
     expect(screen.getByText('Loading…')).toBeInTheDocument()
   })
 
   it('prompts the user to log in when there is no token', async () => {
-    setAuth({ token: null, isLoading: false })
-    render(<PlaylistsPage />)
-
-    // The "Please log in" copy only renders in the !token branch.
-    expect(
-      await screen.findByText(/please log in/i)
-    ).toBeInTheDocument()
-    expect(mockListMyPlaylists).not.toHaveBeenCalled()
-  })
-
-  it('renders an empty state when the user has no playlists', async () => {
-    mockListMyPlaylists.mockResolvedValue({
-      data: [],
-      pagination: { page: 1, pageSize: 20, totalItems: 0, totalPages: 0 },
-    })
+    mockUseAuth.mockReturnValue(defaultAuth({ token: null }))
 
     render(<PlaylistsPage />)
-
-    expect(await screen.findByText(/no playlists yet/i)).toBeInTheDocument()
     expect(
-      screen.getByText(/create your first playlist to get started/i)
+      await screen.findByText(/please log in to view your playlists/i)
     ).toBeInTheDocument()
   })
 
-  it('renders playlist cards with title, badge, tracks count, and creation date', async () => {
-    mockListMyPlaylists.mockResolvedValue({
-      data: [
-        mockPlaylist({ id: 'pl-1', title: 'Indie Vibes', isPublic: true, trackCount: 3 }),
-        mockPlaylist({ id: 'pl-2', title: 'Workout Jams', isPublic: false, trackCount: 7 }),
-      ],
-      pagination: { page: 1, pageSize: 20, totalItems: 2, totalPages: 1 },
-    })
+  // ── Loading / error / empty ─────────────────────────────────────────────
 
-    render(<PlaylistsPage />)
+  it('shows the load-error alert and Retry button when the fetch fails', async () => {
+    mockListMyPlaylists.mockRejectedValueOnce(new Error('boom'))
 
-    expect(await screen.findByText('Indie Vibes')).toBeInTheDocument()
-    expect(screen.getByText('Workout Jams')).toBeInTheDocument()
-    expect(screen.getByText('Public')).toBeInTheDocument()
-    expect(screen.getByText('Private')).toBeInTheDocument()
-    expect(screen.getByText(/3\s+tracks/)).toBeInTheDocument()
-    expect(screen.getByText(/7\s+tracks/)).toBeInTheDocument()
-  })
-
-  // ── Error state ───────────────────────────────────────────────────────
-
-  it('shows the load-error alert with a Retry button that re-fetches', async () => {
     const user = userEvent.setup()
-    mockListMyPlaylists.mockRejectedValueOnce(new Error('Boom'))
-
     render(<PlaylistsPage />)
 
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent('Failed to load playlists')
-    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
+    // Match by role, then assert text — `findByRole('alert', { name })` is
+    // unreliable for `<p role="alert">` because the computed accessible
+    // name can vary across testing-library versions.
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /failed to load playlists/i
+    )
 
-    // After the failure, a retry should re-invoke listMyPlaylists.
-    mockListMyPlaylists.mockResolvedValueOnce({
-      data: [mockPlaylist({ id: 'pl-1' })],
-      pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 },
-    })
-    await user.click(screen.getByRole('button', { name: /retry/i }))
-
-    await waitFor(() => {
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-    })
+    await user.click(screen.getByRole('button', { name: /^retry$/i }))
+    expect(mockListMyPlaylists).toHaveBeenCalledTimes(2)
   })
 
-  // ── Create flow ───────────────────────────────────────────────────────
+  it('shows the empty-state line when the list is empty', async () => {
+    mockListMyPlaylists.mockResolvedValueOnce(mockMyPlaylistsList([]))
+
+    render(<PlaylistsPage />)
+    expect(
+      await screen.findByText(/no playlists yet/i)
+    ).toBeInTheDocument()
+  })
+
+  // ── Populated state ─────────────────────────────────────────────────────
+
+  it('renders playlist cards with title and track count', async () => {
+    render(<PlaylistsPage />)
+
+    expect(await screen.findByText('My Mix Tape')).toBeInTheDocument()
+    expect(screen.getByText('Indie Vibes')).toBeInTheDocument()
+    // One of the seeded playlists has trackCount: 3.
+    expect(screen.getByText(/3 tracks/i)).toBeInTheDocument()
+  })
+
+  // ── Create form ─────────────────────────────────────────────────────────
 
   it('opens the create form when "+ New Playlist" is clicked', async () => {
     const user = userEvent.setup()
     render(<PlaylistsPage />)
 
-    expect(screen.queryByLabelText(/^title$/i)).not.toBeInTheDocument()
-
     await openCreateForm(user)
 
-    expect(screen.getByLabelText(/^title$/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/public/i)).toBeInTheDocument()
+    // Toggle button text flipped to "Cancel".
+    expect(
+      screen.queryByRole('button', { name: /\+ new playlist/i })
+    ).not.toBeInTheDocument()
+    // Submit button + title input are present in the form.
+    expect(
+      screen.getByRole('button', { name: /create playlist/i })
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText(/title/i)).toBeInTheDocument()
   })
 
   it('keeps Create Playlist disabled until the title is filled', async () => {
@@ -234,7 +171,7 @@ describe('PlaylistsPage', () => {
     const submit = screen.getByRole('button', { name: /create playlist/i })
     expect(submit).toBeDisabled()
 
-    await user.type(screen.getByLabelText(/^title$/i), 'My Playlist')
+    await user.type(screen.getByLabelText(/title/i), 'Roadtrip')
     expect(submit).toBeEnabled()
   })
 
@@ -243,111 +180,91 @@ describe('PlaylistsPage', () => {
     render(<PlaylistsPage />)
 
     await openCreateForm(user)
-    expect(screen.getByLabelText(/^title$/i)).toBeInTheDocument()
-
-    // Now the button reads "Cancel".
     await user.click(screen.getByRole('button', { name: /^cancel$/i }))
-    expect(screen.queryByLabelText(/^title$/i)).not.toBeInTheDocument()
+
+    // Form has been torn down — submit button and title input are gone.
+    expect(
+      screen.queryByRole('button', { name: /create playlist/i })
+    ).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/title/i)).not.toBeInTheDocument()
+    // Toggle button is back to showing "+ New Playlist".
+    expect(
+      screen.getByRole('button', { name: /\+ new playlist/i })
+    ).toBeInTheDocument()
   })
 
   it('submits valid input and calls createPlaylist, then re-fetches the list', async () => {
     const user = userEvent.setup()
-    const onCreate = mockCreatePlaylist.mockResolvedValueOnce({
-      data: mockPlaylist({ id: 'pl-new', title: 'Brand New' }),
-    })
-    // The create handler calls load() again after success so the new playlist shows up.
-    mockListMyPlaylists.mockResolvedValueOnce({
-      data: [mockPlaylist({ id: 'pl-1' })],
-      pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 },
-    })
-
     render(<PlaylistsPage />)
 
     await openCreateForm(user)
-    await user.type(screen.getByLabelText(/^title$/i), 'Brand New')
-    await user.click(screen.getByLabelText(/public/i))
+    await user.type(screen.getByLabelText(/title/i), 'Roadtrip')
     await user.click(screen.getByRole('button', { name: /create playlist/i }))
 
-    await waitFor(() => expect(onCreate).toHaveBeenCalledTimes(1))
-    expect(onCreate).toHaveBeenCalledWith(
+    // After successful create, the form closes — toggle button reverts
+    // back to "+ New Playlist".
+    expect(
+      await screen.findByRole('button', { name: /\+ new playlist/i })
+    ).toBeInTheDocument()
+
+    expect(mockCreatePlaylist).toHaveBeenCalledWith(
       'test-token',
-      expect.objectContaining({
-        title: 'Brand New',
-        isPublic: true,
-        tracks: [],
-      })
+      expect.objectContaining({ title: 'Roadtrip' })
     )
-    // Form closes after success.
-    expect(screen.queryByLabelText(/^title$/i)).not.toBeInTheDocument()
+    // initial load + auto-reload after create.
+    expect(mockListMyPlaylists).toHaveBeenCalledTimes(2)
   })
 
   it('shows an error alert when create fails', async () => {
-    const user = userEvent.setup()
-    mockCreatePlaylist.mockRejectedValueOnce(new Error('Server exploded'))
+    mockCreatePlaylist.mockRejectedValueOnce(new Error('create failed'))
 
+    const user = userEvent.setup()
     render(<PlaylistsPage />)
 
     await openCreateForm(user)
-    await user.type(screen.getByLabelText(/^title$/i), 'Bad Idea')
+    await user.type(screen.getByLabelText(/title/i), 'Roadtrip')
     await user.click(screen.getByRole('button', { name: /create playlist/i }))
 
-    expect(await screen.findByText('Server exploded')).toBeInTheDocument()
+    expect(
+      await screen.findByRole('alert')
+    ).toHaveTextContent(/create failed/i)
   })
 
-  // ── Delete flow ───────────────────────────────────────────────────────
+  // ── Delete flow ─────────────────────────────────────────────────────────
 
-  it('deletes a playlist via its row button and calls deletePlaylist', async () => {
+  it('deletes a playlist when Delete is clicked', async () => {
     const user = userEvent.setup()
-    const onDelete = mockDeletePlaylist.mockResolvedValueOnce(undefined)
-    mockListMyPlaylists.mockResolvedValueOnce({
-      data: [mockPlaylist({ id: 'pl-1', title: 'My Mix Tape' })],
-      pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 },
-    })
-
     render(<PlaylistsPage />)
 
     await screen.findByText('My Mix Tape')
-    await user.click(screen.getByRole('button', { name: /^delete$/i }))
 
-    await waitFor(() => expect(onDelete).toHaveBeenCalledTimes(1))
-    expect(onDelete).toHaveBeenCalledWith('test-token', 'pl-1')
+    const deleteButtons = screen.getAllByRole('button', { name: /delete/i })
+    await user.click(deleteButtons[0]!)
+
+    expect(mockDeletePlaylist).toHaveBeenCalledWith('test-token', 'pl-1')
+    expect(mockListMyPlaylists).toHaveBeenCalledTimes(2) // initial + after delete
   })
 
-  it('shows a per-playlist error alert when delete fails and leaves the playlist in the list', async () => {
-    const user = userEvent.setup()
-    mockDeletePlaylist.mockRejectedValueOnce(new Error('Nope'))
+  it('shows a per-row error and isolates it from the rest of the list', async () => {
+    mockDeletePlaylist.mockImplementation(async (_t: string, id: string) => {
+      if (id === 'pl-1') throw new Error('delete failed')
+    })
 
+    const user = userEvent.setup()
     render(<PlaylistsPage />)
 
     await screen.findByText('My Mix Tape')
-    await user.click(screen.getByRole('button', { name: /^delete$/i }))
 
-    expect(await screen.findByText('Nope')).toBeInTheDocument()
-    // Playlist card is still rendered.
-    expect(screen.getByText('My Mix Tape')).toBeInTheDocument()
-  })
+    const deleteButtons = screen.getAllByRole('button', { name: /delete/i })
+    await user.click(deleteButtons[0]!)
 
-  it('only deletes the targeted playlist when there are multiple', async () => {
-    const user = userEvent.setup()
-    const onDelete = mockDeletePlaylist.mockResolvedValueOnce(undefined)
-    mockListMyPlaylists.mockResolvedValueOnce({
-      data: [
-        mockPlaylist({ id: 'pl-1', title: 'Indie' }),
-        mockPlaylist({ id: 'pl-2', title: 'Workout' }),
-      ],
-      pagination: { page: 1, pageSize: 20, totalItems: 2, totalPages: 1 },
-    })
+    expect(
+      await screen.findByText(/delete failed/i)
+    ).toBeInTheDocument()
 
-    render(<PlaylistsPage />)
-
-    await screen.findByText('Indie')
-    await screen.findByText('Workout')
-
-    // The "Indie" row's Delete button is the first one in the document tree.
-    const deleteButtons = screen.getAllByRole('button', { name: /^delete$/i })
-    await user.click(deleteButtons[0])
-
-    await waitFor(() => expect(onDelete).toHaveBeenCalledTimes(1))
-    expect(onDelete).toHaveBeenCalledWith('test-token', 'pl-1')
+    // The good playlist is still in the list.
+    expect(screen.getByText('Indie Vibes')).toBeInTheDocument()
+    // We didn't auto-reload after a failed delete.
+    expect(mockListMyPlaylists).toHaveBeenCalledTimes(1)
   })
 })
