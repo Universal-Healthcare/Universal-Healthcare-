@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import PlaylistsPage from '../app/playlists/page'
 import {
@@ -26,7 +27,7 @@ const { mockListMyPlaylists, mockCreatePlaylist, mockDeletePlaylist, mockUseAuth
 
 vi.mock('../lib/auth-context', () => ({
   useAuth: () => mockUseAuth(),
-  AuthProvider: ({ children }: { children: React.ReactNode }) => children,
+  AuthProvider: ({ children }: { children: ReactNode }) => children,
 }))
 
 vi.mock('../lib/api-client', () => ({

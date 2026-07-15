@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { ReactNode } from 'react'
 import type { MeResponse } from '@universal-healthcare/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EditProfilePage from '../app/profile/edit/page'
@@ -22,7 +23,7 @@ const { mockGetMe, mockUpdateMe, mockUseAuth } = vi.hoisted(() => ({
 
 vi.mock('../lib/auth-context', () => ({
   useAuth: () => mockUseAuth(),
-  AuthProvider: ({ children }: { children: React.ReactNode }) => children,
+  AuthProvider: ({ children }: { children: ReactNode }) => children,
 }))
 
 vi.mock('../lib/api-client', () => ({

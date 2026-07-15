@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import PlaylistDetailPage from '../app/playlists/[id]/page'
 
@@ -65,7 +66,7 @@ vi.mock('next/navigation', () => ({
 }))
 
 vi.mock('../lib/auth-context', () => ({
-  AuthProvider: ({ children }: { children: React.ReactNode }) => children,
+  AuthProvider: ({ children }: { children: ReactNode }) => children,
   useAuth: () => ({ token: 'test-token', user: null, isLoading: false }),
 }))
 
