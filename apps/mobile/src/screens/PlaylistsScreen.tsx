@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -23,6 +23,14 @@ export default function PlaylistsScreen({ onSelectPlaylist }: Props) {
   const [isPublic, setIsPublic] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({})
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const hasLoadedOnce = useRef(false)
+
+  useEffect(() => {
+    if (!loading) {
+      hasLoadedOnce.current = true
+    }
+  }, [loading])
 
   const handleCreate = useCallback(async () => {
     if (!title.trim()) return
@@ -44,6 +52,7 @@ export default function PlaylistsScreen({ onSelectPlaylist }: Props) {
 
   const handleDelete = useCallback(
     async (id: string) => {
+      setDeletingId(id)
       try {
         await actions.remove(id)
         setDeleteErrors((prev) => {
@@ -57,6 +66,8 @@ export default function PlaylistsScreen({ onSelectPlaylist }: Props) {
           ...prev,
           [id]: err instanceof Error ? err.message : 'Failed to delete playlist',
         }))
+      } finally {
+        setDeletingId(null)
       }
     },
     [actions, refresh]
@@ -110,22 +121,28 @@ export default function PlaylistsScreen({ onSelectPlaylist }: Props) {
 
         <Pressable
           onPress={() => handleDelete(item.id)}
+          disabled={deletingId === item.id}
           style={({ pressed }) => [
             styles.deleteButton,
-            pressed && styles.deleteButtonPressed,
+            pressed && deletingId !== item.id && styles.deleteButtonPressed,
+            deletingId === item.id && styles.deleteButtonDisabled,
           ]}
           accessibilityRole="button"
           accessibilityLabel={`Delete playlist ${item.title}`}
         >
-          <Text style={styles.deleteButtonText}>Delete</Text>
+          {deletingId === item.id ? (
+            <ActivityIndicator size="small" color="#9ca3af" />
+          ) : (
+            <Text style={styles.deleteButtonText}>Delete</Text>
+          )}
         </Pressable>
       </Pressable>
     ),
-    [handleDelete, deleteErrors, onSelectPlaylist]
+    [handleDelete, deleteErrors, onSelectPlaylist, deletingId]
   )
 
-  // ── Loading ───────────────────────────────────────────────────────────────
-  if (loading) {
+  // ── Loading (first load only) ────────────────────────────────────────────
+  if (loading && !hasLoadedOnce.current) {
     return (
       <View style={styles.center}>
         <ActivityIndicator testID="loading-indicator" size="large" />
@@ -133,8 +150,8 @@ export default function PlaylistsScreen({ onSelectPlaylist }: Props) {
     )
   }
 
-  // ── Error ─────────────────────────────────────────────────────────────────
-  if (error) {
+  // ── Error (first load only) ──────────────────────────────────────────────
+  if (error && !hasLoadedOnce.current) {
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>{error}</Text>
@@ -156,6 +173,13 @@ export default function PlaylistsScreen({ onSelectPlaylist }: Props) {
   // ── OK ────────────────────────────────────────────────────────────────────
   return (
     <View style={styles.container}>
+      {/* ── Inline error banner (post-first-load refresh failures) ──────── */}
+      {error && hasLoadedOnce.current && (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorBannerText}>{error}</Text>
+        </View>
+      )}
+
       <View style={styles.header}>
         <Text style={styles.heading}>My Playlists</Text>
         <Pressable
@@ -254,6 +278,8 @@ export default function PlaylistsScreen({ onSelectPlaylist }: Props) {
         }
         contentContainerStyle={data.length === 0 && styles.emptyContainer}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
+        refreshing={loading}
+        onRefresh={refresh}
       />
     </View>
   )
@@ -438,6 +464,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#6b7280',
   },
+  deleteButtonDisabled: {
+    opacity: 0.5,
+  },
 
   // Empty
   emptyContainer: {
@@ -465,6 +494,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     marginHorizontal: 20,
   },
+  // Error banner (inline, not full-screen)
+  errorBanner: {
+    backgroundColor: '#fef2f2',
+    borderBottomWidth: 1,
+    borderBottomColor: '#fecaca',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  errorBannerText: {
+    color: '#b00020',
+    fontSize: 13,
+  },
+
   errorText: {
     color: '#b00020',
     fontSize: 13,
