@@ -44,13 +44,22 @@ function playlistFromPrisma(raw: RawPlaylist): Playlist {
 }
 
 export const playlistRepository = {
-  async listByUserId(userId: string): Promise<Playlist[]> {
-    const rows = await prisma.playlist.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      include: { tracks: { orderBy: { position: 'asc' } } },
-    })
-    return rows.map(playlistFromPrisma)
+  async listByUserId(
+    userId: string,
+    skip: number,
+    take: number
+  ): Promise<{ items: Playlist[]; total: number }> {
+    const [rows, total] = await Promise.all([
+      prisma.playlist.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        include: { tracks: { orderBy: { position: 'asc' } } },
+        skip,
+        take,
+      }),
+      prisma.playlist.count({ where: { userId } }),
+    ])
+    return { items: rows.map(playlistFromPrisma), total }
   },
 
   async findById(id: string): Promise<Playlist | null> {
@@ -90,15 +99,53 @@ export const playlistRepository = {
     ])
   },
 
-  async updateMetadata(
+  async update(
     id: string,
-    input: Omit<UpdatePlaylistInput, 'tracks'>
+    input: UpdatePlaylistInput
   ): Promise<Playlist> {
-    const row = await prisma.playlist.update({
+    const { tracks, ...metadata } = input
+    const hasMetadata =
+      metadata.title !== undefined || metadata.isPublic !== undefined
+    const hasTracks = tracks !== undefined
+
+    // When both metadata and tracks change, wrap in a transaction so the
+    // playlist is never half-updated.
+    if (hasMetadata && hasTracks) {
+      const row = await prisma.$transaction(async (tx) => {
+        await tx.track.deleteMany({ where: { playlistId: id } })
+        await tx.track.createMany({
+          data: tracks.map((t, position) => ({ ...t, playlistId: id, position })),
+        })
+        return tx.playlist.update({
+          where: { id },
+          data: metadata as { title?: string; isPublic?: boolean },
+          include: { tracks: { orderBy: { position: 'asc' } } },
+        })
+      })
+      return playlistFromPrisma(row)
+    }
+
+    if (hasTracks) {
+      await this.setTracks(id, tracks)
+    }
+
+    if (hasMetadata) {
+      const row = await prisma.playlist.update({
+        where: { id },
+        data: metadata as { title?: string; isPublic?: boolean },
+        include: { tracks: { orderBy: { position: 'asc' } } },
+      })
+      return playlistFromPrisma(row)
+    }
+
+    // Re-fetch — tracks-only update needs fresh state with new positions.
+    const row = await prisma.playlist.findUnique({
       where: { id },
-      data: input,
       include: { tracks: { orderBy: { position: 'asc' } } },
     })
+    if (!row) {
+      throw new Error(`Playlist ${id} vanished during update`)
+    }
     return playlistFromPrisma(row)
   },
 
