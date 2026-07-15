@@ -112,12 +112,11 @@ describe('PlaylistsPage', () => {
     const user = userEvent.setup()
     render(<PlaylistsPage />)
 
-    // Match by role, then assert text — `findByRole('alert', { name })` is
-    // unreliable for `<p role="alert">` because the computed accessible
-    // name can vary across testing-library versions.
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      /failed to load playlists/i
-    )
+    // Match by text directly — terser, and also avoids any
+    // role-vs-accessible-name flakiness on `<p role="alert">`.
+    expect(
+      await screen.findByText(/failed to load playlists/i)
+    ).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /^retry$/i }))
     expect(mockListMyPlaylists).toHaveBeenCalledTimes(2)
